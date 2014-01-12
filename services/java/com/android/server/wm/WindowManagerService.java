@@ -10903,7 +10903,6 @@ public class WindowManagerService extends IWindowManager.Stub
         return mWindowMap;
     }
     
-    +
 
     /** SPLIT VIEW **/
     private int mSplitViewTasks[];
