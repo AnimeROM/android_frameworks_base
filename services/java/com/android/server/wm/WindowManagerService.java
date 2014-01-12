@@ -9887,8 +9887,8 @@ public class WindowManagerService extends IWindowManager.Stub
                 }
             }
 
-     if (DEBUG_FOCUS_LIGHT) Slog.v(TAG, "findFocusedWindow: Found new focus @ " + i +
-                " = " + win);
+            if (DEBUG_FOCUS_LIGHT) Slog.v(TAG, "findFocusedWindow: Found new focus @ " + i +
+            " = " + win);
 
             // Dispatch to this window if it is wants key events.
             if (win.canReceiveKeys()) {
