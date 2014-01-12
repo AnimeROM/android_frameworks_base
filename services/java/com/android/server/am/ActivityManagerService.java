@@ -285,7 +285,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     static final int FULL_PSS_LOWERED_INTERVAL = 2*60*1000;
 
     // The rate at which we check for apps using excessive power -- 15 mins.
-    static final int POWER_CHECK_DELAY = (DEBUG_POWER_QUICK ? 2 : 15) * 60*1000;
+    static final int POWER_CHECK_DELAY = (DEBUG_POWER_QUICK ? 2 : 10) * 60*1000;
 
     // The minimum sample duration we will allow before deciding we have
     // enough data on wake locks to start killing things.
