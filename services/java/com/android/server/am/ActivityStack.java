@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 The Android Open Source Project
+ * Copyright (C) 2014 The AnimeROM Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.android.server.am;
 
-import com.android.internal.app.ActivityTrigger;
+//import com.android.internal.app.ActivityTrigger;
 import static com.android.server.am.ActivityManagerService.TAG;
 import static com.android.server.am.ActivityManagerService.localLOGV;
 import static com.android.server.am.ActivityManagerService.DEBUG_CLEANUP;
