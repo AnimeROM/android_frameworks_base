@@ -111,6 +111,8 @@ import com.android.systemui.statusbar.SignalClusterView;
 import com.android.systemui.statusbar.StatusBarIconView;
 import com.android.systemui.statusbar.policy.BatteryController;
 import com.android.systemui.statusbar.policy.BluetoothController;
+import com.android.systemui.statusbar.policy.CenterClock;
+import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.policy.DateView;
 import com.android.systemui.statusbar.policy.HeadsUpNotificationView;
 import com.android.systemui.statusbar.policy.KeyButtonView;
@@ -304,6 +306,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     int mSystemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE;
 
     DisplayMetrics mDisplayMetrics = new DisplayMetrics();
+    
+    CenterClock mCenterClock;
 
     // XXX: gesture research
     private final GestureRecorder mGestureRec = DEBUG_GESTURES
@@ -588,6 +592,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         } else {
             addActiveDisplayView();
         }
+        
+        mCenterClock = (CenterClock) sb.findViewById(R.id.centerclock);
 
         // figure out which pixel-format to use for the status bar.
         mPixelFormat = PixelFormat.OPAQUE;
@@ -1468,10 +1474,16 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     }
 
     public void showClock(boolean show) {
+        Clock clock = (Clock) mStatusBarView.findViewById(R.id.clock);
         if (mStatusBarView == null) return;
         View clock = mStatusBarView.findViewById(R.id.clock);
         if (clock != null) {
-            clock.setVisibility(show ? View.VISIBLE : View.GONE);
+            clock.updateVisibilityFromStatusBar(show);
+        }
+        
+        CenterClock centerclock = (CenterClock) mStatusBarView.findViewById(R.id.centerclock);
+        if (centerclock != null) {
+            centerclock.updateVisibilityFromStatusBar(show);
         }
     }
 
@@ -2513,16 +2525,20 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         @Override
         public void tickerStarting() {
             mTicking = true;
+            mCenterClock.updateVisibilityFromStatusBar(false);
             mStatusBarContents.setVisibility(View.GONE);
             mTickerView.setVisibility(View.VISIBLE);
             mTickerView.startAnimation(loadAnim(com.android.internal.R.anim.push_up_in, null));
+            mCenterClock.startAnimation(loadAnim(com.android.internal.R.anim.push_up_out, null));
             mStatusBarContents.startAnimation(loadAnim(com.android.internal.R.anim.push_up_out, null));
         }
 
         @Override
         public void tickerDone() {
+            mCenterClock.updateVisibilityFromStatusBar(true);
             mStatusBarContents.setVisibility(View.VISIBLE);
             mTickerView.setVisibility(View.GONE);
+            mCenterClock.startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));
             mStatusBarContents.startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));
             mTickerView.startAnimation(loadAnim(com.android.internal.R.anim.push_down_out,
                         mTickingDoneListener));
