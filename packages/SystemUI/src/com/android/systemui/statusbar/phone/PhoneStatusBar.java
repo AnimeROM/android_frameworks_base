@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 The Android Open Source Project
+ * Copyright (C) 2014 AnimeROM
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,8 +111,6 @@ import com.android.systemui.statusbar.SignalClusterView;
 import com.android.systemui.statusbar.StatusBarIconView;
 import com.android.systemui.statusbar.policy.BatteryController;
 import com.android.systemui.statusbar.policy.BluetoothController;
-import com.android.systemui.statusbar.policy.CenterClock;
-import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.policy.DateView;
 import com.android.systemui.statusbar.policy.HeadsUpNotificationView;
 import com.android.systemui.statusbar.policy.KeyButtonView;
@@ -287,6 +285,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     private Animator mLightsOnAnimation;
 
     private boolean mBrightnessControl = true;
+    private boolean mCustomHeader = false;
+
     private float mScreenWidth;
     private int mMinBrightness;
     int mLinger;
@@ -306,8 +306,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     int mSystemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE;
 
     DisplayMetrics mDisplayMetrics = new DisplayMetrics();
-    
-    CenterClock mCenterClock;
 
     // XXX: gesture research
     private final GestureRecorder mGestureRec = DEBUG_GESTURES
@@ -326,7 +324,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         }
     };
 
-    Runnable mLongPressBrightnessChange = new Runnable() {
+    private final Runnable mLongPressBrightnessChange = new Runnable() {
         @Override
         public void run() {
             mStatusBarView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
@@ -350,6 +348,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                     Settings.System.STATUS_BAR_CUSTOM_HEADER), false, this);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.QUICK_SETTINGS_TILES), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QUICK_SETTINGS_TILES_ROW), false, this);
             update();
         }
 
@@ -366,9 +366,12 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                     Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC;
             mBrightnessControl = !autoBrightness && Settings.System.getInt(
                     resolver, Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL, 0) == 1;
+            mCustomHeader = Settings.System.getInt(
+                    resolver, Settings.System.STATUS_BAR_CUSTOM_HEADER, 0) == 1;
 
             updateCustomHeaderStatus();
             if (mQS != null) mQS.updateResources();
+
         }
     }
 
@@ -592,8 +595,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         } else {
             addActiveDisplayView();
         }
-        
-        mCenterClock = (CenterClock) sb.findViewById(R.id.centerclock);
 
         // figure out which pixel-format to use for the status bar.
         mPixelFormat = PixelFormat.OPAQUE;
@@ -637,6 +638,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         mHasSettingsPanel = res.getBoolean(R.bool.config_hasSettingsPanel);
         mHasFlipSettings = res.getBoolean(R.bool.config_hasFlipSettingsPanel);
 
+        // Notifications date time
         mDateTimeView = mNotificationPanelHeader.findViewById(R.id.datetime);
 
         mSettingsButton = (ImageView) mStatusBarWindow.findViewById(R.id.settings_button);
@@ -789,6 +791,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                 mQS.setBar(mStatusBarView);
                 mQS.setup(mNetworkController, mBluetoothController, mBatteryController,
                         mLocationController, mRotationLockController);
+
                 if (mEditModeButton != null) {
                     mEditModeButton.setOnClickListener(mEditModeButtonListener);
                     mEditModeButton.setOnLongClickListener(mEditModeLongButtonListener);
@@ -833,14 +836,10 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     }
 
     private void updateCustomHeaderStatus() {
-        ContentResolver resolver = mContext.getContentResolver();
-        boolean customHeader = Settings.System.getInt(
-                resolver, Settings.System.STATUS_BAR_CUSTOM_HEADER, 0) == 1;
-
         if (mNotificationPanelHeader == null) return;
 
         // Setup the updating notification bar header image
-        if (customHeader) {
+        if (mCustomHeader) {
             if (mStatusHeaderUpdater == null) {
                 mStatusHeaderUpdater = new Runnable() {
                     private Drawable mPrevious = mNotificationPanelHeader.getBackground();
@@ -1341,6 +1340,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
             if (!((provisioned && ent.notification.getScore() >= HIDE_ICONS_BELOW_SCORE)
                     || showNotificationEvenIfUnprovisioned(ent.notification))) continue;
             if (!notificationIsForCurrentUser(ent.notification)) continue;
+            if (isIconHiddenByUser(ent.notification.getPackageName())) continue;
             toShow.add(ent.icon);
         }
 
@@ -1474,16 +1474,10 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     }
 
     public void showClock(boolean show) {
-        Clock clock = (Clock) mStatusBarView.findViewById(R.id.clock);
         if (mStatusBarView == null) return;
         View clock = mStatusBarView.findViewById(R.id.clock);
         if (clock != null) {
-            clock.updateVisibilityFromStatusBar(show);
-        }
-        
-        CenterClock centerclock = (CenterClock) mStatusBarView.findViewById(R.id.centerclock);
-        if (centerclock != null) {
-            centerclock.updateVisibilityFromStatusBar(show);
+            clock.setVisibility(show ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -2037,8 +2031,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         mExpandedVisible = false;
         mPile.setLayoutTransitionsEnabled(false);
-        if (mNavigationBarView != null)
+        if (mNavigationBarView != null) {
             mNavigationBarView.setSlippery(false);
+        }
         visibilityChanged(false);
 
         // Shrink the window to the size of the status bar only
@@ -2339,11 +2334,11 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         }
     }
 
-    @Override  // CommandQueue
+    @Override // CommandQueue
     public void setAutoRotate(boolean enabled) {
         Settings.System.putInt(mContext.getContentResolver(),
-                Settings.System.ACCELEROMETER_ROTATION,
-                enabled ? 1 : 0);
+              Settings.System.ACCELEROMETER_ROTATION,
+              enabled ? 1 : 0);
     }
 
     private int computeBarMode(int oldVis, int newVis, BarTransitions transitions,
@@ -2525,20 +2520,16 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         @Override
         public void tickerStarting() {
             mTicking = true;
-            mCenterClock.updateVisibilityFromStatusBar(false);
             mStatusBarContents.setVisibility(View.GONE);
             mTickerView.setVisibility(View.VISIBLE);
             mTickerView.startAnimation(loadAnim(com.android.internal.R.anim.push_up_in, null));
-            mCenterClock.startAnimation(loadAnim(com.android.internal.R.anim.push_up_out, null));
             mStatusBarContents.startAnimation(loadAnim(com.android.internal.R.anim.push_up_out, null));
         }
 
         @Override
         public void tickerDone() {
-            mCenterClock.updateVisibilityFromStatusBar(true);
             mStatusBarContents.setVisibility(View.VISIBLE);
             mTickerView.setVisibility(View.GONE);
-            mCenterClock.startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));
             mStatusBarContents.startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));
             mTickerView.startAnimation(loadAnim(com.android.internal.R.anim.push_down_out,
                         mTickingDoneListener));
@@ -2861,16 +2852,19 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
     private View.OnClickListener mEditModeButtonListener = new View.OnClickListener() {
         public void onClick(View v) {
-            final boolean enabled = mSettingsContainer.isEditModeEnabled();
-            if(mAnimatingEditModeButton) return;
-            mAnimatingEditModeButton = true;
-            mEditModeButton.animate().rotationYBy(180)
-                    .setListener(new AnimatorListenerAdapter() {
-                        public void onAnimationEnd(Animator animation) {
-                            mSettingsContainer.setEditModeEnabled(!enabled);
-                            mAnimatingEditModeButton = false;
-                        }
+            if (mSettingsContainer != null) {
+                final boolean enabled = mSettingsContainer.isEditModeEnabled();
+                if (mAnimatingEditModeButton) return;
+                mAnimatingEditModeButton = true;
+                mEditModeButton.animate().rotationYBy(180)
+                       .setListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                mSettingsContainer.setEditModeEnabled(!enabled);
+                                mAnimatingEditModeButton = false;
+                            }
                 });
+            }
         }
     };
 
@@ -2883,13 +2877,35 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
     private View.OnLongClickListener mEditModeLongButtonListener = new View.OnLongClickListener() {
         public boolean onLongClick(View v) {
-            Settings.System.putString(mContext.getContentResolver(),
-                        Settings.System.QUICK_SETTINGS_TILES, QuickSettings.DEFAULT_TILES);
-            // Update the QuickSettings container
-            if (mQS != null) mQS.updateTiles();
-            mSettingsContainer.setEditModeEnabled(true);
-            mAnimatingEditModeButton = false;
+            if (mSettingsContainer != null) {
+                if (mAnimatingEditModeButton 
+                    && mSettingsContainer.isEditModeEnabled()) {
+                    return false;
+                }
+                mAnimatingEditModeButton = true;
+                mEditModeButton.animate().rotationYBy(180)
+                       .setListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationStart(Animator animation) {
+                                mSettingsContainer.resetAllTiles();
+                            }
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                if (mQS != null) mQS.updateTiles();
+                                mHandler.postDelayed(mEditModeEnabled, 100);
+                                mAnimatingEditModeButton = false;
+                            }
+                });
+            }
             return true;
+        }
+    };
+
+    private Runnable mEditModeEnabled = new Runnable() {
+        public void run() {
+            if (mSettingsContainer != null) {
+                mSettingsContainer.setEditModeEnabled(true);
+            }
         }
     };
 
