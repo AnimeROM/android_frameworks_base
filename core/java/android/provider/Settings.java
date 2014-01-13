@@ -65,6 +65,12 @@ import java.util.Locale;
 public final class Settings {
 
     // Intent actions for Settings
+    
+    /**
+     * Whether to show centerclock in the status bar
+     * @hide
+     */
+    public static final String STATUS_BAR_CENTERCLOCK = "status_bar_centerclock";
 
     /**
      * Activity Action: Show system settings.
