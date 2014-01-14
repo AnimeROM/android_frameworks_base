@@ -689,7 +689,7 @@
     <bool name="config_button_brightness_support">false</bool>
     
     <!-- Fix for Devices with this config -->
-    <bool name="config_enableTorch">true</bool> // For Devices With Torch Support
+    
 
     <!-- Array of output values for keyboard backlight corresponding to the LUX values
          in the config_autoBrightnessLevels array.  This array should have size one greater
