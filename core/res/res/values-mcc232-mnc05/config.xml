@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-/* apps/common/assets/default/default/skins/StatusBar.xml
-**
-** Copyright 2012, The Android Open Source Project
+/*
+** Copyright 2013, The Android Open Source Project
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
@@ -17,8 +16,11 @@
 ** limitations under the License.
 */
 -->
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/notification_inspect_item" android:title="@string/status_bar_notification_inspect_item_title" />
-    <item android:id="@+id/notification_hide_icon_packages" android:title="@string/status_bar_notification_hide_icon_packages"
-            android:checkable="true" android:checked="false" />
-</menu>
+
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Don't use roaming icon for considered operators -->
+    <string-array translatable="false" name="config_operatorConsideredNonRoaming">
+        <item>23203</item>
+        <item>23210</item>
+    </string-array>
+</resources>
