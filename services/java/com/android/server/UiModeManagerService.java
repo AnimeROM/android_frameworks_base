@@ -715,7 +715,7 @@ final class UiModeManagerService extends IUiModeManager.Stub
 }
        }
 }
-vate void updateTwilightThemeAutoMode() {
+     private void updateTwilightThemeAutoMode() {
 		updateComputedNightModeLocked();
 		mConfiguration.uiThemeMode = mComputedNightMode
 		? Configuration.UI_THEME_MODE_HOLO_DARK
