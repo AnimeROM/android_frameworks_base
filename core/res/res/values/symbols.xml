@@ -1823,4 +1823,7 @@
   <java-symbol type="drawable" name="ic_navigation_ring_lastapp" />
 
   <java-symbol type="bool" name="config_offscreenGestureSupport" />
+
+ <!--UI THEME DARK-->
+ <java-symbol type="integer" name="config_uiThemeMode" />
 </resources>
