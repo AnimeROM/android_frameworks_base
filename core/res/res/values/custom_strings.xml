@@ -50,5 +50,5 @@
 
     <!-- status message in phone options dialog for when mobile data is off -->
     <string name="global_actions_mobile_data_off_status">Mobile data is OFF</string>
-
+ 
 </resources> 
