@@ -1,10 +1,7 @@
 /*
-<<<<<<< HEAD
  * Copyright (C) 2014 AnimeROM
-=======
  * Copyright (C) 2007 The Android Open Source Project
  * This code has been modified. Portions copyright (C) 2013, ParanoidAndroid Project.
->>>>>>> 19442d7c6aa6b67a5474da0ed50b2ce799d1180d
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -340,12 +337,9 @@ public class KeyguardViewManager {
             if (bgAspect > vAspect) {
                 background.setBounds(0, 0, (int) (vHeight * bgAspect), vHeight);
             } else {
-<<<<<<< HEAD
                 background.setBounds(0, 0, vWidth, (int) (vWidth / bgAspect));
-=======
                 mCustomBackground.setBounds(0, 0, vWidth,
                         (int) (vWidth * (vAspect >= 1 ? bgAspect : (1 / bgAspect))));
->>>>>>> 19442d7c6aa6b67a5474da0ed50b2ce799d1180d
             }
         }
 
