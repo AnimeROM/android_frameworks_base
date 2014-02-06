@@ -41,7 +41,7 @@ public class BitmapFactory {
          * the same result from the decoder as if null were passed.
          */
         public Options() {
-            inDither = true;
+            inDither = false;
             inScaled = true;
             inPremultiplied = true;
         }
@@ -133,10 +133,10 @@ public class BitmapFactory {
          * system's screen depth, and characteristics of the original image such
          * as if it has per-pixel alpha (requiring a config that also does).
          * 
-         * Image are loaded with the {@link Bitmap.Config#RGB_565} config by
+         * Image are loaded with the {@link Bitmap.Config#RGB_8888} config by
          * default.
          */
-        public Bitmap.Config inPreferredConfig = Bitmap.Config.RGB_565;
+        public Bitmap.Config inPreferredConfig = Bitmap.Config.RGB_8888;
 
         /**
          * If true (which is the default), the resulting bitmap will have its
