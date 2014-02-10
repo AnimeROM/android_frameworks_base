@@ -2337,6 +2337,19 @@ public final class Settings {
         public static final String ACCELEROMETER_ROTATION = "accelerometer_rotation";
 
         /**
+         * Control the type of rotation which can be performed using the accelerometer
+         * if ACCELEROMETER_ROTATION is enabled.
+         * Value is a bitwise combination of
+         * 1 = 0 degrees (portrait)
+         * 2 = 90 degrees (left)
+         * 4 = 180 degrees (inverted portrait)
+         * 8 = 270 degrees (right)
+         * Setting to 0 is effectively orientation lock
+         * @hide
+         */
+        public static final String ACCELEROMETER_ROTATION_ANGLES = "accelerometer_rotation_angles";
+
+        /**
          * Default screen rotation when no other policy applies.
          * When {@link #ACCELEROMETER_ROTATION} is zero and no on-screen Activity expresses a
          * preference, this rotation value will be used. Must be one of the
@@ -2921,6 +2934,12 @@ public final class Settings {
                 "recents_memory_indicator_location";
 
         /**
+         * Alternative recent apps integration using OmniSwitch
+         * @hide
+         */
+        public static final String RECENTS_USE_OMNISWITCH = "recents_use_omniswitch";
+
+        /**
          * Immersive mode global actions switch
          * 0 = no
          * 1 = yes
@@ -3178,6 +3197,20 @@ public final class Settings {
         public static final String NON_INTRUSIVE_INCALL = "non_intrusive_incall";
 
         /**
+         * Should Dialer suggest nearby phone numbers
+         *
+         * @hide
+         */
+        public static final String ENABLE_DIALER_SUGGESTIONS = "enable_dialer_suggestions";
+
+        /**
+         * Should Dialer reverse look up names for unknown phone numbers
+         *
+         * @hide
+         */
+        public static final String ENABLE_DIALER_REVERSE_LOOKUP = "enable_dialer_reverse_lookup";
+
+        /**
          * Should Flip to Silence be used
          *
          * @hide
@@ -3341,6 +3374,20 @@ public final class Settings {
          * @hide
          */
         public static final String SOFT_BACK_KILL_APP_ENABLE = "soft_back_kill_app_enable";
+
+        /**
+         * Emulate existance of a menu key on devices that have only soft keys
+         * Using a soft menu key will behave like if a hw menu is used
+         * @hide
+         */
+        public static final String EMULATE_HW_MENU_KEY = "emulate_hw_menu_key";
+
+        /**
+         * Force show overflow (3dot) menu for devices that have a hw menu key
+         * Can be used for custom button assignment and force soft key use-cases
+         * @hide
+         */
+        public static final String FORCE_SHOW_OVERFLOW_MENU = "force_show_overflow_menu";
 
         /**
          * Settings to backup. This is here so that it's in the same place as the settings

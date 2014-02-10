@@ -1823,7 +1823,13 @@
   <java-symbol type="drawable" name="ic_navigation_ring_lastapp" />
 
   <java-symbol type="bool" name="config_offscreenGestureSupport" />
+<<<<<<< HEAD
 
  <!--UI THEME DARK-->
  <java-symbol type="integer" name="config_uiThemeMode" />
+=======
+  <java-symbol type="bool" name="config_hasRotationLockSwitch" />
+  <java-symbol type="string" name="toast_rotation_unlocked" />
+  <java-symbol type="string" name="toast_rotation_locked" />
+>>>>>>> b2c0751a62d93244141c14eefd52aa6b60777ce8
 </resources>
