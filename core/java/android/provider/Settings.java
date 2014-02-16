@@ -2122,6 +2122,12 @@ public final class Settings {
         public static final int VOLUME_OVERLAY_NONE = 3;
 
         /**
+         * Timeout for volume panel
+         * @hide
+         */
+        public static final String VOLUME_PANEL_TIMEOUT = "volume_panel_timeout";
+
+        /**
          * Volume Adjust Sounds Enable, This is the noise made when using volume hard buttons
          * Defaults to 1 - sounds enabled
          * @hide
@@ -4282,6 +4288,12 @@ public final class Settings {
         public static final String ADB_NOTIFY = "adb_notify";
 
         /**
+         * Whether to reboot the device if an unknown ADB host is detected while screen is locked
+         * @hide
+         */
+        public static final String ADB_PARANOID = "adb_paranoid";
+
+        /**
          * Setting to allow mock locations and location provider status to be injected into the
          * LocationManager service for testing purposes during application development.  These
          * locations and status values  override actual location and status information generated
@@ -4403,6 +4415,17 @@ public final class Settings {
          * modes that might be added in the future.
          */
         public static final String LOCATION_MODE = "location_mode";
+
+        /**
+         * The last degree of location access enabled by the user.
+         * <p/>
+         * Must be one of {@link
+         * #LOCATION_MODE_HIGH_ACCURACY}, {@link #LOCATION_MODE_SENSORS_ONLY}, {@link
+         * #LOCATION_MODE_BATTERY_SAVING}.
+         *
+         * @hide
+         */
+        public static final String LOCATION_LAST_MODE = "location_last_mode";
 
         /**
          * Location access disabled.
