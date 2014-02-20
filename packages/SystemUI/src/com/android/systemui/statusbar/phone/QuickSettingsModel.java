@@ -83,6 +83,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         int iconId;
         String label;
         boolean enabled = false;
+        int mode;
     }
     static class BatteryState extends State {
         int batteryLevel;
@@ -1252,20 +1253,19 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
 
     void refreshLocationTile() {
         if (mLocationTile != null) {
-            onLocationSettingsChanged(mLocationState.enabled);
+            onLocationSettingsChanged(mLocationState.enabled, mLocationState.mode);
         }
     }
 
     @Override
-    public void onLocationSettingsChanged(boolean locationEnabled) {
+    public void onLocationSettingsChanged(boolean locationEnabled, int locationMode) {
         int textResId = locationEnabled ? R.string.quick_settings_location_label
                 : R.string.quick_settings_location_off_label;
         String label = mContext.getText(textResId).toString();
-        int locationIconId = locationEnabled
-                ? R.drawable.ic_qs_location_on : R.drawable.ic_qs_location_off;
         mLocationState.enabled = locationEnabled;
+        mLocationState.mode = locationMode;
         mLocationState.label = label;
-        mLocationState.iconId = locationIconId;
+        mLocationState.iconId = getLocationDrawableMode(mLocationController.locationMode());
         mLocationCallback.refreshView(mLocationTile, mLocationState);
         refreshBackLocationTile();
     }
@@ -1284,12 +1284,22 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     }
 
     private void onBackLocationSettingsChanged(int mode, boolean locationEnabled) {
-        int locationIconId = locationEnabled
-                ? R.drawable.ic_qs_location_on : R.drawable.ic_qs_location_off;
         mBackLocationState.enabled = locationEnabled;
         mBackLocationState.label = getLocationMode(mContext.getResources(), mode);
-        mBackLocationState.iconId = locationIconId;
+        mBackLocationState.iconId = getLocationDrawableMode(mode);
         mBackLocationCallback.refreshView(mBackLocationTile, mBackLocationState);
+    }
+
+    private int getLocationDrawableMode(int location) {
+        switch (location) {
+            case Settings.Secure.LOCATION_MODE_SENSORS_ONLY:
+                return R.drawable.ic_qs_location_on_gps;
+            case Settings.Secure.LOCATION_MODE_BATTERY_SAVING:
+                return R.drawable.ic_qs_location_on_wifi;
+            case Settings.Secure.LOCATION_MODE_HIGH_ACCURACY:
+                return R.drawable.ic_qs_location_on;
+        }
+        return R.drawable.ic_qs_location_off;
     }
 
     private String getLocationMode(Resources r, int location) {
