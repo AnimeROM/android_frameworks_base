@@ -2171,8 +2171,8 @@ please see styles_device_defaults.xml.
     <style name="Widget.Holo.Light.SeekBar" parent="Widget.Holo.SeekBar">
         <item name="android:progressDrawable">@android:drawable/scrubber_progress_horizontal_holo_light</item>
         <item name="android:indeterminateDrawable">@android:drawable/scrubber_progress_horizontal_holo_light</item>
-    </style>
 	<item name="android:thumb">@android:drawable/scrubber_control_selector_holo_light</item>
+    </style>
 
     <style name="Widget.Holo.Light.RatingBar" parent="Widget.RatingBar">
         <item name="android:progressDrawable">@android:drawable/ratingbar_full_holo_light</item>
