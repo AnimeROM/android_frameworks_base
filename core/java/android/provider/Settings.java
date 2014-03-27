@@ -2689,6 +2689,12 @@ public final class Settings {
         public static final String LOCKSCREEN_SEE_THROUGH = "lockscreen_see_through";
 
         /**
+         * Allows setting the radius for blur
+         * @hide
+         */
+        public static final String LOCKSCREEN_BLUR_RADIUS = "lockscreen_blur_radius";
+
+        /**
          * Whether to display notifications on screen when screen is off
          * @hide
          */
@@ -2793,6 +2799,18 @@ public final class Settings {
          * @hide
          */
         public static final String ACTIVE_DISPLAY_BYPASS = "active_display_bypass";
+
+        /**
+         * Whether to not showing active display when there is annoying notifications.
+         * @hide
+         */
+        public static final String ACTIVE_DISPLAY_ANNOYING = "active_display_annoying";
+
+        /**
+         * double tap every where to sleep on active display.
+         * @hide
+         */
+        public static final String ACTIVE_DISPLAY_DOUBLE_TAP = "active_display_double_tap";
 
         /**
          * Screen-On Notification Light
@@ -2978,9 +2996,22 @@ public final class Settings {
          * Immersive mode global actions switch
          * 0 = no
          * 1 = yes
+         * 2 = hide navigation bar
+         * 3 = hide status bar
          * @hide
          */
         public static final String IMMERSIVE_MODE = "immersive_mode";
+
+        /*
+         * return value last immersive mode
+         * @hide
+         */
+        public static final String IMMERSIVE_LAST_ACTIVE_STATE = "immersive_last_active_state";
+
+        /**
+         * @hide
+         */
+        public static final String STATUSBAR_NOTIFICATION_ACTIVITY = "statusbar_notification_activity";
 
         /**
          * Show when WiFi or data mobile is sending/receiving data
@@ -3541,6 +3572,11 @@ public final class Settings {
             POINTER_SPEED,
             VIBRATE_WHEN_RINGING,
             RINGTONE,
+            PHONE_BLACKLIST_ENABLED,
+            PHONE_BLACKLIST_NOTIFY_ENABLED,
+            PHONE_BLACKLIST_PRIVATE_NUMBER_MODE,
+            PHONE_BLACKLIST_UNKNOWN_NUMBER_MODE,
+            PHONE_BLACKLIST_REGEX_ENABLED,
             NOTIFICATION_SOUND
         };
 

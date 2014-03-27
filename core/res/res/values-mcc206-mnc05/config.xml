@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
+/*
+** Copyright 2013, The Android Open Source Project
 **
-** Copyright 2012, The Android Open Source Project
-**
-** Licensed under the Apache License, Version 2.0 (the "License")
+** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
 ** You may obtain a copy of the License at
 **
@@ -17,9 +17,9 @@
 */
 -->
 
-<merge xmlns:android="http://schemas.android.com/apk/res/android">
-    <include layout="@layout/glow_pad_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"/>
-</merge>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Don't use roaming icon for considered operators -->
+    <string-array translatable="false" name="config_operatorConsideredNonRoaming">
+        <item>20610</item>
+    </string-array>
+</resources>
