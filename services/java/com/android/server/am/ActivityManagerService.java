@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2006-2008 The Android Open Source Project
+ * Copyright (C) 2014 The AnimeROM Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -285,7 +286,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     static final int FULL_PSS_LOWERED_INTERVAL = 2*60*1000;
 
     // The rate at which we check for apps using excessive power -- 15 mins.
-    static final int POWER_CHECK_DELAY = (DEBUG_POWER_QUICK ? 2 : 15) * 60*1000;
+    static final int POWER_CHECK_DELAY = (DEBUG_POWER_QUICK ? 2 : 10) * 60*1000;
 
     // The minimum sample duration we will allow before deciding we have
     // enough data on wake locks to start killing things.
@@ -7253,6 +7254,22 @@ public final class ActivityManagerService extends ActivityManagerNative
         }
     }
 
+    public IBinder getActivityForTask(int task, boolean onlyRoot) {
+        final ActivityStack mainStack = mStackSupervisor.getFocusedStack();
+        synchronized(this) {
+            ArrayList<ActivityStack> stacks = mStackSupervisor.getStacks();
+            for (ActivityStack stack : stacks) {
+                TaskRecord r = stack.taskForIdLocked(task);
+                if (r != null && r.getTopActivity() != null) {
+                    return r.getTopActivity().appToken;
+                } else {
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
     // =========================================================
     // THUMBNAILS
     // =========================================================
@@ -9776,7 +9793,8 @@ public final class ActivityManagerService extends ActivityManagerNative
         // System app batching:
         if (!bufferWasEmpty) {
             // An existing dropbox-writing thread is outstanding, so
-            // we don't need to start it up.  The existing thread will
+               // An existing dropbox-writing thread is outstanding, so
+            // we don't need to start it up. The existing thread will
             // catch the buffer appends we just did.
             return;
         }
@@ -9788,7 +9806,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             public void run() {
                 // 5 second sleep to let stacks arrive and be batched together
                 try {
-                    Thread.sleep(5000);  // 5 seconds
+                    Thread.sleep(5000); // 5 seconds
                 } catch (InterruptedException e) {}
 
                 String errorReport;
@@ -9882,7 +9900,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             return;
         }
         // Note: ProcessRecord 'process' is guarded by the service
-        // instance.  (notably process.pkgList, which could otherwise change
+        // instance. (notably process.pkgList, which could otherwise change
         // concurrently during execution of this method)
         synchronized (this) {
             sb.append("Process: ").append(processName).append("\n");
@@ -10066,8 +10084,8 @@ public final class ActivityManagerService extends ActivityManagerNative
             if (r != null && r.instrumentationClass != null) {
                 Slog.w(TAG, "Error in app " + r.processName
                       + " running instrumentation " + r.instrumentationClass + ":");
-                if (shortMsg != null) Slog.w(TAG, "  " + shortMsg);
-                if (longMsg != null) Slog.w(TAG, "  " + longMsg);
+                if (shortMsg != null) Slog.w(TAG, " " + shortMsg);
+                if (longMsg != null) Slog.w(TAG, " " + longMsg);
                 Bundle info = new Bundle();
                 info.putString("shortMsg", shortMsg);
                 info.putString("longMsg", longMsg);
@@ -10197,7 +10215,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         }
                         errList.add(report);
                     } else {
-                        Slog.w(TAG, "Missing app error report, app = " + app.processName + 
+                        Slog.w(TAG, "Missing app error report, app = " + app.processName +
                                 " crashing = " + app.crashing +
                                 " notResponding = " + app.notResponding);
                     }
@@ -10270,7 +10288,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 }
                 if ((app.thread != null) && (!app.crashing && !app.notResponding)) {
                     // Generate process state info for running application
-                    ActivityManager.RunningAppProcessInfo currApp = 
+                    ActivityManager.RunningAppProcessInfo currApp =
                         new ActivityManager.RunningAppProcessInfo(app.processName,
                                 app.pid, app.getPackageList());
                     fillInProcMemInfo(app, currApp);
@@ -10286,7 +10304,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         currApp.importanceReasonComponent = (ComponentName)app.adjTarget;
                     }
                     //Slog.v(TAG, "Proc " + app.processName + ": imp=" + currApp.importance
-                    //        + " lru=" + currApp.lru);
+                    // + " lru=" + currApp.lru);
                     if (runList == null) {
                         runList = new ArrayList<ActivityManager.RunningAppProcessInfo>();
                     }
@@ -10365,26 +10383,26 @@ public final class ActivityManagerService extends ActivityManagerNative
                 dumpClient = true;
             } else if ("-h".equals(opt)) {
                 pw.println("Activity manager dump options:");
-                pw.println("  [-a] [-c] [-h] [cmd] ...");
-                pw.println("  cmd may be one of:");
-                pw.println("    a[ctivities]: activity stack state");
-                pw.println("    b[roadcasts] [PACKAGE_NAME] [history [-s]]: broadcast state");
-                pw.println("    i[ntents] [PACKAGE_NAME]: pending intent state");
-                pw.println("    p[rocesses] [PACKAGE_NAME]: process state");
-                pw.println("    o[om]: out of memory management");
-                pw.println("    prov[iders] [COMP_SPEC ...]: content provider state");
-                pw.println("    provider [COMP_SPEC]: provider client-side state");
-                pw.println("    s[ervices] [COMP_SPEC ...]: service state");
-                pw.println("    service [COMP_SPEC]: service client-side state");
-                pw.println("    package [PACKAGE_NAME]: all state related to given package");
-                pw.println("    all: dump all activities");
-                pw.println("    top: dump the top activity");
-                pw.println("  cmd may also be a COMP_SPEC to dump activities.");
-                pw.println("  COMP_SPEC may be a component name (com.foo/.myApp),");
-                pw.println("    a partial substring in a component name, a");
-                pw.println("    hex object identifier.");
-                pw.println("  -a: include all available server state.");
-                pw.println("  -c: include client state.");
+                pw.println(" [-a] [-c] [-h] [cmd] ...");
+                pw.println(" cmd may be one of:");
+                pw.println(" a[ctivities]: activity stack state");
+                pw.println(" b[roadcasts] [PACKAGE_NAME] [history [-s]]: broadcast state");
+                pw.println(" i[ntents] [PACKAGE_NAME]: pending intent state");
+                pw.println(" p[rocesses] [PACKAGE_NAME]: process state");
+                pw.println(" o[om]: out of memory management");
+                pw.println(" prov[iders] [COMP_SPEC ...]: content provider state");
+                pw.println(" provider [COMP_SPEC]: provider client-side state");
+                pw.println(" s[ervices] [COMP_SPEC ...]: service state");
+                pw.println(" service [COMP_SPEC]: service client-side state");
+                pw.println(" package [PACKAGE_NAME]: all state related to given package");
+                pw.println(" all: dump all activities");
+                pw.println(" top: dump the top activity");
+                pw.println(" cmd may also be a COMP_SPEC to dump activities.");
+                pw.println(" COMP_SPEC may be a component name (com.foo/.myApp),");
+                pw.println(" a partial substring in a component name, a");
+                pw.println(" hex object identifier.");
+                pw.println(" -a: include all available server state.");
+                pw.println(" -c: include client state.");
                 return;
             } else {
                 pw.println("Unknown argument: " + opt + "; use -h for help");
@@ -10563,7 +10581,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         boolean needSep = printedAnything;
 
         boolean printed = ActivityStackSupervisor.printThisActivity(pw, mFocusedActivity,
-                dumpPackage, needSep, "  mFocusedActivity: ");
+                dumpPackage, needSep, " mFocusedActivity: ");
         if (printed) {
             printedAnything = true;
             needSep = false;
@@ -10575,7 +10593,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             }
             needSep = true;
             printedAnything = true;
-            mStackSupervisor.dump(pw, "  ");
+            mStackSupervisor.dump(pw, " ");
         }
 
         if (mRecentTasks.size() > 0) {
@@ -10594,20 +10612,20 @@ public final class ActivityManagerService extends ActivityManagerNative
                     if (needSep) {
                         pw.println();
                     }
-                    pw.println("  Recent tasks:");
+                    pw.println(" Recent tasks:");
                     printedHeader = true;
                     printedAnything = true;
                 }
-                pw.print("  * Recent #"); pw.print(i); pw.print(": ");
+                pw.print(" * Recent #"); pw.print(i); pw.print(": ");
                         pw.println(tr);
                 if (dumpAll) {
-                    mRecentTasks.get(i).dump(pw, "    ");
+                    mRecentTasks.get(i).dump(pw, " ");
                 }
             }
         }
 
         if (!printedAnything) {
-            pw.println("  (nothing)");
+            pw.println(" (nothing)");
         }
     }
 
@@ -10630,14 +10648,14 @@ public final class ActivityManagerService extends ActivityManagerNative
                         continue;
                     }
                     if (!needSep) {
-                        pw.println("  All known processes:");
+                        pw.println(" All known processes:");
                         needSep = true;
                         printedAnything = true;
                     }
-                    pw.print(r.persistent ? "  *PERS*" : "  *APP*");
+                    pw.print(r.persistent ? " *PERS*" : " *APP*");
                         pw.print(" UID "); pw.print(procs.keyAt(ia));
                         pw.print(" "); pw.println(r);
-                    r.dump(pw, "    ");
+                    r.dump(pw, " ");
                     if (r.persistent) {
                         numPers++;
                     }
@@ -10656,13 +10674,13 @@ public final class ActivityManagerService extends ActivityManagerNative
                     if (needSep) {
                         pw.println();
                     }
-                    pw.println("  Isolated process list (sorted by uid):");
+                    pw.println(" Isolated process list (sorted by uid):");
                     printedAnything = true;
                     printed = true;
                     needSep = true;
                 }
                 pw.println(String.format("%sIsolated #%2d: %s",
-                        "    ", i, r.toString()));
+                        " ", i, r.toString()));
             }
         }
 
@@ -10670,13 +10688,13 @@ public final class ActivityManagerService extends ActivityManagerNative
             if (needSep) {
                 pw.println();
             }
-            pw.print("  Process LRU list (sorted by oom_adj, "); pw.print(mLruProcesses.size());
+            pw.print(" Process LRU list (sorted by oom_adj, "); pw.print(mLruProcesses.size());
                     pw.print(" total, non-act at ");
                     pw.print(mLruProcesses.size()-mLruProcessActivityStart);
                     pw.print(", non-svc at ");
                     pw.print(mLruProcesses.size()-mLruProcessServiceStart);
                     pw.println("):");
-            dumpProcessOomList(pw, this, mLruProcesses, "    ", "Proc", "PERS", false, dumpPackage);
+            dumpProcessOomList(pw, this, mLruProcesses, " ", "Proc", "PERS", false, dumpPackage);
             needSep = true;
             printedAnything = true;
         }
@@ -10692,11 +10710,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                     if (!printed) {
                         if (needSep) pw.println();
                         needSep = true;
-                        pw.println("  PID mappings:");
+                        pw.println(" PID mappings:");
                         printed = true;
                         printedAnything = true;
                     }
-                    pw.print("    PID #"); pw.print(mPidsSelfLocked.keyAt(i));
+                    pw.print(" PID #"); pw.print(mPidsSelfLocked.keyAt(i));
                         pw.print(": "); pw.println(mPidsSelfLocked.valueAt(i));
                 }
             }
@@ -10706,7 +10724,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             synchronized (mPidsSelfLocked) {
                 boolean printed = false;
                 for (int i=0; i<mForegroundProcesses.size(); i++) {
-                    ProcessRecord r = mPidsSelfLocked.get( 
+                    ProcessRecord r = mPidsSelfLocked.get(
                             mForegroundProcesses.valueAt(i).pid);
                     if (dumpPackage != null && (r == null
                             || !r.pkgList.containsKey(dumpPackage))) {
@@ -10715,11 +10733,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                     if (!printed) {
                         if (needSep) pw.println();
                         needSep = true;
-                        pw.println("  Foreground Processes:");
+                        pw.println(" Foreground Processes:");
                         printed = true;
                         printedAnything = true;
                     }
-                    pw.print("    PID #"); pw.print(mForegroundProcesses.keyAt(i));
+                    pw.print(" PID #"); pw.print(mForegroundProcesses.keyAt(i));
                             pw.print(": "); pw.println(mForegroundProcesses.valueAt(i));
                 }
             }
@@ -10729,8 +10747,8 @@ public final class ActivityManagerService extends ActivityManagerNative
             if (needSep) pw.println();
             needSep = true;
             printedAnything = true;
-            pw.println("  Persisent processes that are starting:");
-            dumpProcessList(pw, this, mPersistentStartingProcesses, "    ",
+            pw.println(" Persisent processes that are starting:");
+            dumpProcessList(pw, this, mPersistentStartingProcesses, " ",
                     "Starting Norm", "Restarting PERS", dumpPackage);
         }
 
@@ -10738,8 +10756,8 @@ public final class ActivityManagerService extends ActivityManagerNative
             if (needSep) pw.println();
             needSep = true;
             printedAnything = true;
-            pw.println("  Processes that are being removed:");
-            dumpProcessList(pw, this, mRemovedProcesses, "    ",
+            pw.println(" Processes that are being removed:");
+            dumpProcessList(pw, this, mRemovedProcesses, " ",
                     "Removed Norm", "Removed PERS", dumpPackage);
         }
         
@@ -10747,8 +10765,8 @@ public final class ActivityManagerService extends ActivityManagerNative
             if (needSep) pw.println();
             needSep = true;
             printedAnything = true;
-            pw.println("  Processes that are on old until the system is ready:");
-            dumpProcessList(pw, this, mProcessesOnHold, "    ",
+            pw.println(" Processes that are on old until the system is ready:");
+            dumpProcessList(pw, this, mProcessesOnHold, " ",
                     "OnHold Norm", "OnHold PERS", dumpPackage);
         }
 
@@ -10773,11 +10791,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                     if (!printed) {
                         if (needSep) pw.println();
                         needSep = true;
-                        pw.println("  Time since processes crashed:");
+                        pw.println(" Time since processes crashed:");
                         printed = true;
                         printedAnything = true;
                     }
-                    pw.print("    Process "); pw.print(pname);
+                    pw.print(" Process "); pw.print(pname);
                             pw.print(" uid "); pw.print(puid);
                             pw.print(": last crashed ");
                             TimeUtils.formatDuration(now-uids.valueAt(i), pw);
@@ -10804,32 +10822,32 @@ public final class ActivityManagerService extends ActivityManagerNative
                     if (!printed) {
                         if (needSep) pw.println();
                         needSep = true;
-                        pw.println("  Bad processes:");
+                        pw.println(" Bad processes:");
                         printedAnything = true;
                     }
                     BadProcessInfo info = uids.valueAt(i);
-                    pw.print("    Bad process "); pw.print(pname);
+                    pw.print(" Bad process "); pw.print(pname);
                             pw.print(" uid "); pw.print(puid);
                             pw.print(": crashed at time "); pw.println(info.time);
                     if (info.shortMsg != null) {
-                        pw.print("      Short msg: "); pw.println(info.shortMsg);
+                        pw.print(" Short msg: "); pw.println(info.shortMsg);
                     }
                     if (info.longMsg != null) {
-                        pw.print("      Long msg: "); pw.println(info.longMsg);
+                        pw.print(" Long msg: "); pw.println(info.longMsg);
                     }
                     if (info.stack != null) {
-                        pw.println("      Stack:");
+                        pw.println(" Stack:");
                         int lastPos = 0;
                         for (int pos=0; pos<info.stack.length(); pos++) {
                             if (info.stack.charAt(pos) == '\n') {
-                                pw.print("        ");
+                                pw.print(" ");
                                 pw.write(info.stack, lastPos, pos-lastPos);
                                 pw.println();
                                 lastPos = pos+1;
                             }
                         }
                         if (lastPos < info.stack.length()) {
-                            pw.print("        ");
+                            pw.print(" ");
                             pw.write(info.stack, lastPos, info.stack.length()-lastPos);
                             pw.println();
                         }
@@ -10841,26 +10859,26 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (dumpPackage == null) {
             pw.println();
             needSep = false;
-            pw.println("  mStartedUsers:");
+            pw.println(" mStartedUsers:");
             for (int i=0; i<mStartedUsers.size(); i++) {
                 UserStartedState uss = mStartedUsers.valueAt(i);
-                pw.print("    User #"); pw.print(uss.mHandle.getIdentifier());
+                pw.print(" User #"); pw.print(uss.mHandle.getIdentifier());
                         pw.print(": "); uss.dump("", pw);
             }
-            pw.print("  mStartedUserArray: [");
+            pw.print(" mStartedUserArray: [");
             for (int i=0; i<mStartedUserArray.length; i++) {
                 if (i > 0) pw.print(", ");
                 pw.print(mStartedUserArray[i]);
             }
             pw.println("]");
-            pw.print("  mUserLru: [");
+            pw.print(" mUserLru: [");
             for (int i=0; i<mUserLru.size(); i++) {
                 if (i > 0) pw.print(", ");
                 pw.print(mUserLru.get(i));
             }
             pw.println("]");
             if (dumpAll) {
-                pw.print("  mStartedUserArray: "); pw.println(Arrays.toString(mStartedUserArray));
+                pw.print(" mStartedUserArray: "); pw.println(Arrays.toString(mStartedUserArray));
             }
         }
         if (mHomeProcess != null && (dumpPackage == null
@@ -10869,7 +10887,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 pw.println();
                 needSep = false;
             }
-            pw.println("  mHomeProcess: " + mHomeProcess);
+            pw.println(" mHomeProcess: " + mHomeProcess);
         }
         if (mPreviousProcess != null && (dumpPackage == null
                 || mPreviousProcess.pkgList.containsKey(dumpPackage))) {
@@ -10877,11 +10895,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                 pw.println();
                 needSep = false;
             }
-            pw.println("  mPreviousProcess: " + mPreviousProcess);
+            pw.println(" mPreviousProcess: " + mPreviousProcess);
         }
         if (dumpAll) {
             StringBuilder sb = new StringBuilder(128);
-            sb.append("  mPreviousProcessVisibleTime: ");
+            sb.append(" mPreviousProcessVisibleTime: ");
             TimeUtils.formatDuration(mPreviousProcessVisibleTime, sb);
             pw.println(sb);
         }
@@ -10891,13 +10909,13 @@ public final class ActivityManagerService extends ActivityManagerNative
                 pw.println();
                 needSep = false;
             }
-            pw.println("  mHeavyWeightProcess: " + mHeavyWeightProcess);
+            pw.println(" mHeavyWeightProcess: " + mHeavyWeightProcess);
         }
         if (dumpPackage == null) {
-            pw.println("  mConfiguration: " + mConfiguration);
+            pw.println(" mConfiguration: " + mConfiguration);
         }
         if (dumpAll) {
-            pw.println("  mConfigWillChange: " + getFocusedStack().mConfigWillChange);
+            pw.println(" mConfigWillChange: " + getFocusedStack().mConfigWillChange);
             if (mCompatModePackages.getPackages().size() > 0) {
                 boolean printed = false;
                 for (Map.Entry<String, Integer> entry
@@ -10908,21 +10926,21 @@ public final class ActivityManagerService extends ActivityManagerNative
                         continue;
                     }
                     if (!printed) {
-                        pw.println("  mScreenCompatPackages:");
+                        pw.println(" mScreenCompatPackages:");
                         printed = true;
                     }
-                    pw.print("    "); pw.print(pkg); pw.print(": ");
+                    pw.print(" "); pw.print(pkg); pw.print(": ");
                             pw.print(mode); pw.println();
                 }
             }
         }
         if (dumpPackage == null) {
             if (mSleeping || mWentToSleep || mLockScreenShown) {
-                pw.println("  mSleeping=" + mSleeping + " mWentToSleep=" + mWentToSleep
+                pw.println(" mSleeping=" + mSleeping + " mWentToSleep=" + mWentToSleep
                         + " mLockScreenShown " + mLockScreenShown);
             }
             if (mShuttingDown) {
-                pw.println("  mShuttingDown=" + mShuttingDown);
+                pw.println(" mShuttingDown=" + mShuttingDown);
             }
         }
         if (mDebugApp != null || mOrigDebugApp != null || mDebugTransient
@@ -10933,7 +10951,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     pw.println();
                     needSep = false;
                 }
-                pw.println("  mDebugApp=" + mDebugApp + "/orig=" + mOrigDebugApp
+                pw.println(" mDebugApp=" + mDebugApp + "/orig=" + mOrigDebugApp
                         + " mDebugTransient=" + mDebugTransient
                         + " mOrigWaitForDebugger=" + mOrigWaitForDebugger);
             }
@@ -10944,7 +10962,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     pw.println();
                     needSep = false;
                 }
-                pw.println("  mOpenGlTraceApp=" + mOpenGlTraceApp);
+                pw.println(" mOpenGlTraceApp=" + mOpenGlTraceApp);
             }
         }
         if (mProfileApp != null || mProfileProc != null || mProfileFile != null
@@ -10954,44 +10972,44 @@ public final class ActivityManagerService extends ActivityManagerNative
                     pw.println();
                     needSep = false;
                 }
-                pw.println("  mProfileApp=" + mProfileApp + " mProfileProc=" + mProfileProc);
-                pw.println("  mProfileFile=" + mProfileFile + " mProfileFd=" + mProfileFd);
-                pw.println("  mProfileType=" + mProfileType + " mAutoStopProfiler="
+                pw.println(" mProfileApp=" + mProfileApp + " mProfileProc=" + mProfileProc);
+                pw.println(" mProfileFile=" + mProfileFile + " mProfileFd=" + mProfileFd);
+                pw.println(" mProfileType=" + mProfileType + " mAutoStopProfiler="
                         + mAutoStopProfiler);
             }
         }
         if (dumpPackage == null) {
             if (mAlwaysFinishActivities || mController != null) {
-                pw.println("  mAlwaysFinishActivities=" + mAlwaysFinishActivities
+                pw.println(" mAlwaysFinishActivities=" + mAlwaysFinishActivities
                         + " mController=" + mController);
             }
             if (dumpAll) {
-                pw.println("  Total persistent processes: " + numPers);
-                pw.println("  mStartRunning=" + mStartRunning
+                pw.println(" Total persistent processes: " + numPers);
+                pw.println(" mStartRunning=" + mStartRunning
                         + " mProcessesReady=" + mProcessesReady
                         + " mSystemReady=" + mSystemReady);
-                pw.println("  mBooting=" + mBooting
+                pw.println(" mBooting=" + mBooting
                         + " mBooted=" + mBooted
                         + " mFactoryTest=" + mFactoryTest);
-                pw.print("  mLastPowerCheckRealtime=");
+                pw.print(" mLastPowerCheckRealtime=");
                         TimeUtils.formatDuration(mLastPowerCheckRealtime, pw);
                         pw.println("");
-                pw.print("  mLastPowerCheckUptime=");
+                pw.print(" mLastPowerCheckUptime=");
                         TimeUtils.formatDuration(mLastPowerCheckUptime, pw);
                         pw.println("");
-                pw.println("  mGoingToSleep=" + mStackSupervisor.mGoingToSleep);
-                pw.println("  mLaunchingActivity=" + mStackSupervisor.mLaunchingActivity);
-                pw.println("  mAdjSeq=" + mAdjSeq + " mLruSeq=" + mLruSeq);
-                pw.println("  mNumNonCachedProcs=" + mNumNonCachedProcs
+                pw.println(" mGoingToSleep=" + mStackSupervisor.mGoingToSleep);
+                pw.println(" mLaunchingActivity=" + mStackSupervisor.mLaunchingActivity);
+                pw.println(" mAdjSeq=" + mAdjSeq + " mLruSeq=" + mLruSeq);
+                pw.println(" mNumNonCachedProcs=" + mNumNonCachedProcs
                         + " (" + mLruProcesses.size() + " total)"
                         + " mNumCachedHiddenProcs=" + mNumCachedHiddenProcs
                         + " mNumServiceProcs=" + mNumServiceProcs
                         + " mNewNumServiceProcs=" + mNewNumServiceProcs);
-                pw.println("  mAllowLowerMemLevel=" + mAllowLowerMemLevel
+                pw.println(" mAllowLowerMemLevel=" + mAllowLowerMemLevel
                         + " mLastMemoryLevel" + mLastMemoryLevel
                         + " mLastNumProcesses" + mLastNumProcesses);
                 long now = SystemClock.uptimeMillis();
-                pw.print("  mLastIdleTime=");
+                pw.print(" mLastIdleTime=");
                         TimeUtils.formatDuration(now, mLastIdleTime, pw);
                         pw.print(" mLowRamSinceLastIdle=");
                         TimeUtils.formatDuration(getLowRamTimeSinceIdle(now), pw);
@@ -11000,7 +11018,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         }
 
         if (!printedAnything) {
-            pw.println("  (nothing)");
+            pw.println(" (nothing)");
         }
     }
 
@@ -11017,11 +11035,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                 if (!printed) {
                     if (needSep) pw.println();
                     needSep = true;
-                    pw.println("  Processes that are waiting to GC:");
+                    pw.println(" Processes that are waiting to GC:");
                     printed = true;
                 }
-                pw.print("    Process "); pw.println(proc);
-                pw.print("      lowMem="); pw.print(proc.reportLowMemory);
+                pw.print(" Process "); pw.println(proc);
+                pw.print(" lowMem="); pw.print(proc.reportLowMemory);
                         pw.print(", last gced=");
                         pw.print(now-proc.lastRequestedGc);
                         pw.print(" ms ago, last lowMem=");
@@ -11034,7 +11052,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     }
 
     void printOomLevel(PrintWriter pw, String name, int adj) {
-        pw.print("    ");
+        pw.print(" ");
         if (adj >= 0) {
             pw.print(' ');
             if (adj < 10) pw.print(' ');
@@ -11056,7 +11074,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (mLruProcesses.size() > 0) {
             if (needSep) pw.println();
             needSep = true;
-            pw.println("  OOM levels:");
+            pw.println(" OOM levels:");
             printOomLevel(pw, "SYSTEM_ADJ", ProcessList.SYSTEM_ADJ);
             printOomLevel(pw, "PERSISTENT_PROC_ADJ", ProcessList.PERSISTENT_PROC_ADJ);
             printOomLevel(pw, "FOREGROUND_APP_ADJ", ProcessList.FOREGROUND_APP_ADJ);
@@ -11072,23 +11090,23 @@ public final class ActivityManagerService extends ActivityManagerNative
             printOomLevel(pw, "CACHED_APP_MAX_ADJ", ProcessList.CACHED_APP_MAX_ADJ);
 
             if (needSep) pw.println();
-            pw.print("  Process OOM control ("); pw.print(mLruProcesses.size());
+            pw.print(" Process OOM control ("); pw.print(mLruProcesses.size());
                     pw.print(" total, non-act at ");
                     pw.print(mLruProcesses.size()-mLruProcessActivityStart);
                     pw.print(", non-svc at ");
                     pw.print(mLruProcesses.size()-mLruProcessServiceStart);
                     pw.println("):");
-            dumpProcessOomList(pw, this, mLruProcesses, "    ", "Proc", "PERS", true, null);
+            dumpProcessOomList(pw, this, mLruProcesses, " ", "Proc", "PERS", true, null);
             needSep = true;
         }
 
         dumpProcessesToGc(fd, pw, args, opti, needSep, dumpAll, null);
 
         pw.println();
-        pw.println("  mHomeProcess: " + mHomeProcess);
-        pw.println("  mPreviousProcess: " + mPreviousProcess);
+        pw.println(" mHomeProcess: " + mHomeProcess);
+        pw.println(" mPreviousProcess: " + mPreviousProcess);
         if (mHeavyWeightProcess != null) {
-            pw.println("  mHeavyWeightProcess: " + mHeavyWeightProcess);
+            pw.println(" mHeavyWeightProcess: " + mHeavyWeightProcess);
         }
 
         return true;
@@ -11096,11 +11114,11 @@ public final class ActivityManagerService extends ActivityManagerNative
 
     /**
      * There are three ways to call this:
-     *  - no provider specified: dump all the providers
-     *  - a flattened component name that matched an existing provider was specified as the
-     *    first arg: dump that one provider
-     *  - the first arg isn't the flattened component name of an existing provider:
-     *    dump all providers whose component contains the first arg as a substring
+     * - no provider specified: dump all the providers
+     * - a flattened component name that matched an existing provider was specified as the
+     * first arg: dump that one provider
+     * - the first arg isn't the flattened component name of an existing provider:
+     * dump all providers whose component contains the first arg as a substring
      */
     protected boolean dumpProvider(FileDescriptor fd, PrintWriter pw, String name, String[] args,
             int opti, boolean dumpAll) {
@@ -11189,10 +11207,10 @@ public final class ActivityManagerService extends ActivityManagerNative
 
     /**
      * There are three things that cmd can be:
-     *  - a flattened component name that matches an existing activity
-     *  - the cmd arg isn't the flattened component name of an existing activity:
-     *    dump all activity whose component contains the cmd as a substring
-     *  - A hex number of the ActivityRecord object instance.
+     * - a flattened component name that matches an existing activity
+     * - the cmd arg isn't the flattened component name of an existing activity:
+     * dump all activity whose component contains the cmd as a substring
+     * - A hex number of the ActivityRecord object instance.
      */
     protected boolean dumpActivity(FileDescriptor fd, PrintWriter pw, String name, String[] args,
             int opti, boolean dumpAll) {
@@ -11223,11 +11241,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                     pw.print("TASK "); pw.print(lastTask.affinity);
                             pw.print(" id="); pw.println(lastTask.taskId);
                     if (dumpAll) {
-                        lastTask.dump(pw, "  ");
+                        lastTask.dump(pw, " ");
                     }
                 }
             }
-            dumpActivity("  ", fd, pw, activities.get(i), newArgs, dumpAll);
+            dumpActivity(" ", fd, pw, activities.get(i), newArgs, dumpAll);
         }
         return true;
     }
@@ -11238,7 +11256,7 @@ public final class ActivityManagerService extends ActivityManagerNative
      */
     private void dumpActivity(String prefix, FileDescriptor fd, PrintWriter pw,
             final ActivityRecord r, String[] args, boolean dumpAll) {
-        String innerPrefix = prefix + "  ";
+        String innerPrefix = prefix + " ";
         synchronized (this) {
             pw.print(prefix); pw.print("ACTIVITY "); pw.print(r.shortComponentName);
                     pw.print(" "); pw.print(Integer.toHexString(System.identityHashCode(r)));
@@ -11296,19 +11314,19 @@ public final class ActivityManagerService extends ActivityManagerNative
                         continue;
                     }
                     if (!printed) {
-                        pw.println("  Registered Receivers:");
+                        pw.println(" Registered Receivers:");
                         needSep = true;
                         printed = true;
                         printedAnything = true;
                     }
-                    pw.print("  * "); pw.println(r);
-                    r.dump(pw, "    ");
+                    pw.print(" * "); pw.println(r);
+                    r.dump(pw, " ");
                 }
             }
 
             if (mReceiverResolver.dump(pw, needSep ?
-                    "\n  Receiver Resolver Table:" : "  Receiver Resolver Table:",
-                    "    ", dumpPackage, false)) {
+                    "\n Receiver Resolver Table:" : " Receiver Resolver Table:",
+                    " ", dumpPackage, false)) {
                 needSep = true;
                 printedAnything = true;
             }
@@ -11328,24 +11346,24 @@ public final class ActivityManagerService extends ActivityManagerNative
                 }
                 needSep = true;
                 printedAnything = true;
-                pw.print("  Sticky broadcasts for user ");
+                pw.print(" Sticky broadcasts for user ");
                         pw.print(mStickyBroadcasts.keyAt(user)); pw.println(":");
                 StringBuilder sb = new StringBuilder(128);
                 for (Map.Entry<String, ArrayList<Intent>> ent
                         : mStickyBroadcasts.valueAt(user).entrySet()) {
-                    pw.print("  * Sticky action "); pw.print(ent.getKey());
+                    pw.print(" * Sticky action "); pw.print(ent.getKey());
                     if (dumpAll) {
                         pw.println(":");
                         ArrayList<Intent> intents = ent.getValue();
                         final int N = intents.size();
                         for (int i=0; i<N; i++) {
                             sb.setLength(0);
-                            sb.append("    Intent: ");
+                            sb.append(" Intent: ");
                             intents.get(i).toShortString(sb, false, true, false, false);
                             pw.println(sb.toString());
                             Bundle bundle = intents.get(i).getExtras();
                             if (bundle != null) {
-                                pw.print("      ");
+                                pw.print(" ");
                                 pw.println(bundle.toString());
                             }
                         }
@@ -11359,17 +11377,17 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (!onlyHistory && dumpAll) {
             pw.println();
             for (BroadcastQueue queue : mBroadcastQueues) {
-                pw.println("  mBroadcastsScheduled [" + queue.mQueueName + "]="
+                pw.println(" mBroadcastsScheduled [" + queue.mQueueName + "]="
                         + queue.mBroadcastsScheduled);
             }
-            pw.println("  mHandler:");
-            mHandler.dump(new PrintWriterPrinter(pw), "    ");
+            pw.println(" mHandler:");
+            mHandler.dump(new PrintWriterPrinter(pw), " ");
             needSep = true;
             printedAnything = true;
         }
         
         if (!printedAnything) {
-            pw.println("  (nothing)");
+            pw.println(" (nothing)");
         }
     }
 
@@ -11396,11 +11414,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                 if (!printed) {
                     if (needSep) pw.println();
                     needSep = true;
-                    pw.println("  Launching content providers:");
+                    pw.println(" Launching content providers:");
                     printed = true;
                     printedAnything = true;
                 }
-                pw.print("  Launching #"); pw.print(i); pw.print(": ");
+                pw.print(" Launching #"); pw.print(i); pw.print(": ");
                         pw.println(r);
             }
         }
@@ -11425,23 +11443,23 @@ public final class ActivityManagerService extends ActivityManagerNative
                 if (!printed) {
                     if (needSep) pw.println();
                     needSep = true;
-                    pw.println("  Granted Uri Permissions:");
+                    pw.println(" Granted Uri Permissions:");
                     printed = true;
                     printedAnything = true;
                 }
-                pw.print("  * UID "); pw.print(uid);
+                pw.print(" * UID "); pw.print(uid);
                         pw.println(" holds:");
                 for (UriPermission perm : perms.values()) {
-                    pw.print("    "); pw.println(perm);
+                    pw.print(" "); pw.println(perm);
                     if (dumpAll) {
-                        perm.dump(pw, "      ");
+                        perm.dump(pw, " ");
                     }
                 }
             }
         }
 
         if (!printedAnything) {
-            pw.println("  (nothing)");
+            pw.println(" (nothing)");
         }
     }
 
@@ -11463,18 +11481,18 @@ public final class ActivityManagerService extends ActivityManagerNative
                 }
                 printed = true;
                 if (rec != null) {
-                    pw.print("  * "); pw.println(rec);
+                    pw.print(" * "); pw.println(rec);
                     if (dumpAll) {
-                        rec.dump(pw, "    ");
+                        rec.dump(pw, " ");
                     }
                 } else {
-                    pw.print("  * "); pw.println(ref);
+                    pw.print(" * "); pw.println(ref);
                 }
             }
         }
 
         if (!printed) {
-            pw.println("  (nothing)");
+            pw.println(" (nothing)");
         }
     }
 
@@ -11588,7 +11606,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             pw.println(')');
             if (r.adjSource != null || r.adjTarget != null) {
                 pw.print(prefix);
-                pw.print("    ");
+                pw.print(" ");
                 if (r.adjTarget instanceof ComponentName) {
                     pw.print(((ComponentName)r.adjTarget).flattenToShortString());
                 } else if (r.adjTarget != null) {
@@ -11609,20 +11627,20 @@ public final class ActivityManagerService extends ActivityManagerNative
             }
             if (inclDetails) {
                 pw.print(prefix);
-                pw.print("    ");
+                pw.print(" ");
                 pw.print("oom: max="); pw.print(r.maxAdj);
                 pw.print(" curRaw="); pw.print(r.curRawAdj);
                 pw.print(" setRaw="); pw.print(r.setRawAdj);
                 pw.print(" cur="); pw.print(r.curAdj);
                 pw.print(" set="); pw.println(r.setAdj);
                 pw.print(prefix);
-                pw.print("    ");
+                pw.print(" ");
                 pw.print("state: cur="); pw.print(ProcessList.makeProcStateString(r.curProcState));
                 pw.print(" set="); pw.print(ProcessList.makeProcStateString(r.setProcState));
                 pw.print(" lastPss="); pw.print(r.lastPss);
                 pw.print(" lastCachedPss="); pw.println(r.lastCachedPss);
                 pw.print(prefix);
-                pw.print("    ");
+                pw.print(" ");
                 pw.print("keeping="); pw.print(r.keeping);
                 pw.print(" cached="); pw.print(r.cached);
                 pw.print(" empty="); pw.print(r.empty);
@@ -11638,7 +11656,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         }
                         long timeUsed = wtime - r.lastWakeTime;
                         pw.print(prefix);
-                        pw.print("    ");
+                        pw.print(" ");
                         pw.print("keep awake over ");
                         TimeUtils.formatDuration(realtimeSince, pw);
                         pw.print(" used ");
@@ -11650,7 +11668,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     if (r.lastCpuTime != 0) {
                         long timeUsed = r.curCpuTime - r.lastCpuTime;
                         pw.print(prefix);
-                        pw.print("    ");
+                        pw.print(" ");
                         pw.print("run cpu over ");
                         TimeUtils.formatDuration(uptimeSince, pw);
                         pw.print(" used ");
@@ -11822,7 +11840,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 pw.println(mi.pss);
             }
             if (mi.subitems != null) {
-                dumpMemItems(pw, prefix + "           ", mi.shortLabel, mi.subitems,
+                dumpMemItems(pw, prefix + " ", mi.shortLabel, mi.subitems,
                         true, isCompact);
             }
         }
@@ -11922,11 +11940,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                 localOnly = true;
             } else if ("-h".equals(opt)) {
                 pw.println("meminfo dump options: [-a] [-d] [-c] [--oom] [process]");
-                pw.println("  -a: include all available information for each process.");
-                pw.println("  -d: include dalvik details when dumping process details.");
-                pw.println("  -c: dump in a compact machine-parseable representation.");
-                pw.println("  --oom: only show processes organized by oom adj.");
-                pw.println("  --local: only collect details locally, don't call process.");
+                pw.println(" -a: include all available information for each process.");
+                pw.println(" -d: include dalvik details when dumping process details.");
+                pw.println(" -c: dump in a compact machine-parseable representation.");
+                pw.println(" --oom: only show processes organized by oom adj.");
+                pw.println(" --local: only collect details locally, don't call process.");
                 pw.println("If [process] is specified it can be the name or ");
                 pw.println("pid of a specific process to dump.");
                 return;
@@ -11942,7 +11960,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
         ArrayList<ProcessRecord> procs = collectProcesses(pw, opti, args);
         if (procs == null) {
-            // No Java processes.  Maybe they want to print a native process.
+            // No Java processes. Maybe they want to print a native process.
             if (args != null && args.length > opti
                     && args[opti].charAt(0) != '-') {
                 ArrayList<ProcessCpuTracker.Stats> nativeProcs
@@ -12177,20 +12195,20 @@ public final class ActivityManagerService extends ActivityManagerNative
             if (!brief && !oomOnly && !isCompact) {
                 pw.println();
                 pw.println("Total PSS by process:");
-                dumpMemItems(pw, "  ", "proc", procMems, true, isCompact);
+                dumpMemItems(pw, " ", "proc", procMems, true, isCompact);
                 pw.println();
             }
             if (!isCompact) {
                 pw.println("Total PSS by OOM adjustment:");
             }
-            dumpMemItems(pw, "  ", "oom", oomMems, false, isCompact);
+            dumpMemItems(pw, " ", "oom", oomMems, false, isCompact);
             if (!brief && !oomOnly) {
                 PrintWriter out = categoryPw != null ? categoryPw : pw;
                 if (!isCompact) {
                     out.println();
                     out.println("Total PSS by category:");
                 }
-                dumpMemItems(out, "  ", "cat", catMems, true, isCompact);
+                dumpMemItems(out, " ", "cat", catMems, true, isCompact);
             }
             if (!isCompact) {
                 pw.println();
@@ -12229,7 +12247,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             if (!brief) {
                 if (memInfo.getZramTotalSizeKb() != 0) {
                     if (!isCompact) {
-                        pw.print("     ZRAM: "); pw.print(memInfo.getZramTotalSizeKb());
+                        pw.print(" ZRAM: "); pw.print(memInfo.getZramTotalSizeKb());
                                 pw.print(" kB physical used for ");
                                 pw.print(memInfo.getSwapTotalSizeKb()
                                         - memInfo.getSwapFreeSizeKb());
@@ -12263,13 +12281,13 @@ public final class ActivityManagerService extends ActivityManagerNative
                 long voltile = longOut[0] * ProcessList.PAGE_SIZE / 1024;
                 if (!isCompact) {
                     if (sharing != 0 || shared != 0 || unshared != 0 || voltile != 0) {
-                        pw.print("      KSM: "); pw.print(sharing);
+                        pw.print(" KSM: "); pw.print(sharing);
                                 pw.print(" kB saved from shared ");
                                 pw.print(shared); pw.println(" kB");
-                        pw.print("           "); pw.print(unshared); pw.print(" kB unshared; ");
+                        pw.print(" "); pw.print(unshared); pw.print(" kB unshared; ");
                                 pw.print(voltile); pw.println(" kB volatile");
                     }
-                    pw.print("   Tuning: ");
+                    pw.print(" Tuning: ");
                     pw.print(ActivityManager.staticGetMemoryClass());
                     pw.print(" (large ");
                     pw.print(ActivityManager.staticGetLargeMemoryClass());
@@ -12380,7 +12398,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     }
 
     /**
-     * Main code for cleaning up a process when it has gone away.  This is
+     * Main code for cleaning up a process when it has gone away. This is
      * called both as a result of the process dying, or directly when stopping
      * a process when running in single process mode.
      */
@@ -12455,7 +12473,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         // At this point there may be remaining entries in mLaunchingProviders
         // where we were the only one waiting, so they are no longer of use.
         // Look for these and clean up if found.
-        // XXX Commented out for now.  Trying to figure out a way to reproduce
+        // XXX Commented out for now. Trying to figure out a way to reproduce
         // the actual situation to identify what is actually going on.
         if (false) {
             for (int i=0; i<mLaunchingProviders.size(); i++) {
@@ -12811,7 +12829,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     // =========================================================
     
     // Cause the target app to be launched if necessary and its backup agent
-    // instantiated.  The backup agent will invoke backupAgentCreated() on the
+    // instantiated. The backup agent will invoke backupAgentCreated() on the
     // activity manager to announce its creation.
     public boolean bindBackupAgent(ApplicationInfo app, int backupMode) {
         if (DEBUG_BACKUP) Slog.v(TAG, "bindBackupAgent: app=" + app + " mode=" + backupMode);
@@ -12868,7 +12886,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 if (DEBUG_BACKUP) Slog.v(TAG, "Agent proc not running, waiting for attach");
             }
             // Invariants: at this point, the target app process exists and the application
-            // is either already running or in the process of coming up.  mBackupTarget and
+            // is either already running or in the process of coming up. mBackupTarget and
             // mBackupAppName describe the app, so that when it binds back to the AM we
             // know that it's scheduled for a backup-agent operation.
         }
@@ -12887,7 +12905,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         }
     }
 
-    // A backup agent has just come up                    
+    // A backup agent has just come up
     public void backupAgentCreated(String agentPackageName, IBinder agent) {
         if (DEBUG_BACKUP) Slog.v(TAG, "backupAgentCreated: " + agentPackageName
                 + " = " + agent);
@@ -13215,7 +13233,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     receivers = newReceivers;
                 } else if (newReceivers != null) {
                     // We need to concatenate the additional receivers
-                    // found with what we have do far.  This would be easy,
+                    // found with what we have do far. This would be easy,
                     // but we also need to de-dup any receivers that are
                     // singleUser.
                     if (!scannedFirstReceivers) {
@@ -13312,7 +13330,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 } else if (AppWidgetManager.ACTION_APPWIDGET_CONFIGURE.equals(intent.getAction())) {
                     // Special case for compatibility: we don't want apps to send this,
                     // but historically it has not been protected and apps may be using it
-                    // to poke their own app widget.  So, instead of making it protected,
+                    // to poke their own app widget. So, instead of making it protected,
                     // just limit it to the caller.
                     if (callerApp == null) {
                         String msg = "Permission Denial: not allowed to send broadcast "
@@ -13320,7 +13338,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         Slog.w(TAG, msg);
                         throw new SecurityException(msg);
                     } else if (intent.getComponent() != null) {
-                        // They are good enough to send to an explicit component...  verify
+                        // They are good enough to send to an explicit component... verify
                         // it is being sent to the calling app.
                         if (!intent.getComponent().getPackageName().equals(
                                 callerApp.info.packageName)) {
@@ -13563,9 +13581,9 @@ public final class ActivityManagerService extends ActivityManagerNative
         int ir = 0;
         if (receivers != null) {
             // A special case for PACKAGE_ADDED: do not allow the package
-            // being added to see this broadcast.  This prevents them from
+            // being added to see this broadcast. This prevents them from
             // using this as a back door to get run as soon as they are
-            // installed.  Maybe in the future we want to have a special install
+            // installed. Maybe in the future we want to have a special install
             // broadcast or such for apps, but we'd like to deliberately make
             // this decision.
             String skipPackages[] = null;
@@ -13645,7 +13663,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 int seq = r.intent.getIntExtra("seq", -1);
                 Slog.i(TAG, "Enqueueing broadcast " + r.intent.getAction() + " seq=" + seq);
             }
-            boolean replaced = replacePending && queue.replaceOrderedBroadcastLocked(r); 
+            boolean replaced = replacePending && queue.replaceOrderedBroadcastLocked(r);
             if (!replaced) {
                 queue.enqueueOrderedBroadcastLocked(r);
                 queue.scheduleBroadcastsLocked();
@@ -13883,15 +13901,15 @@ public final class ActivityManagerService extends ActivityManagerNative
     }
     
     /**
-     * Report errors that occur while attempting to start Instrumentation.  Always writes the 
-     * error to the logs, but if somebody is watching, send the report there too.  This enables
+     * Report errors that occur while attempting to start Instrumentation. Always writes the
+     * error to the logs, but if somebody is watching, send the report there too. This enables
      * the "am" command to report errors with more information.
-     * 
-     * @param watcher The IInstrumentationWatcher.  Null if there isn't one.
+     *
+     * @param watcher The IInstrumentationWatcher. Null if there isn't one.
      * @param cn The component name of the instrumentation.
      * @param report The error report.
      */
-    private void reportStartInstrumentationFailure(IInstrumentationWatcher watcher, 
+    private void reportStartInstrumentationFailure(IInstrumentationWatcher watcher,
             ComponentName cn, String report) {
         Slog.w(TAG, report);
         try {
@@ -13909,7 +13927,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     void finishInstrumentationLocked(ProcessRecord app, int resultCode, Bundle results) {
         if (app.instrumentationWatcher != null) {
             try {
-                // NOTE:  IInstrumentationWatcher *must* be oneway here
+                // NOTE: IInstrumentationWatcher *must* be oneway here
                 app.instrumentationWatcher.instrumentationFinished(
                     app.instrumentationClass,
                     resultCode,
@@ -14035,7 +14053,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     /**
      * Do either or both things: (1) change the current configuration, and (2)
      * make sure the given activity is running with the (now) current
-     * configuration.  Returns true if the activity has been left running, or
+     * configuration. Returns true if the activity has been left running, or
      * false if <var>starting</var> is being destroyed to match the new
      * configuration.
      * @param persistent TODO
@@ -14058,7 +14076,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 EventLog.writeEvent(EventLogTags.CONFIGURATION_CHANGED, changes);
 
                 if (values.locale != null && !initLocale) {
-                    saveLocaleLocked(values.locale, 
+                    saveLocaleLocked(values.locale,
                                      !values.locale.equals(mConfiguration.locale),
                                      values.userSetLocale);
                 }
@@ -14085,7 +14103,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 // Make sure all resources in our process are updated
                 // right now, so that anyone who is going to retrieve
                 // resource values after we return will be sure to get
-                // the new ones.  This is especially important during
+                // the new ones. This is especially important during
                 // boot, where the first config change needs to guarantee
                 // all resources have that config before following boot
                 // code is executed.
@@ -14150,7 +14168,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
     /**
      * Decide based on the configuration whether we should shouw the ANR,
-     * crash, etc dialogs.  The idea is that if there is no affordnace to
+     * crash, etc dialogs. The idea is that if there is no affordnace to
      * press the on-screen buttons, we shouldn't show the dialog.
      *
      * A thought: SystemUI might also want to get told about this, the Power
@@ -14162,13 +14180,13 @@ public final class ActivityManagerService extends ActivityManagerNative
     }
 
     /**
-     * Save the locale.  You must be inside a synchronized (this) block.
+     * Save the locale. You must be inside a synchronized (this) block.
      */
     private void saveLocaleLocked(Locale l, boolean isDiff, boolean isPersist) {
         if(isDiff) {
             SystemProperties.set("user.language", l.getLanguage());
             SystemProperties.set("user.region", l.getCountry());
-        } 
+        }
 
         if(isPersist) {
             SystemProperties.set("persist.sys.language", l.getLanguage());
@@ -14271,7 +14289,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             app.curSchedGroup = Process.THREAD_GROUP_DEFAULT;
             app.curProcState = ActivityManager.PROCESS_STATE_PERSISTENT;
             // System process can do UI, and when they do we want to have
-            // them trim their memory after the user leaves the UI.  To
+            // them trim their memory after the user leaves the UI. To
             // facilitate this, here we need to determine whether or not it
             // is currently showing UI.
             app.systemNoUi = true;
@@ -14337,9 +14355,9 @@ public final class ActivityManagerService extends ActivityManagerNative
             procState = ActivityManager.PROCESS_STATE_SERVICE;
             //Slog.i(TAG, "EXEC " + (app.execServicesFg ? "FG" : "BG") + ": " + app);
         } else {
-            // As far as we know the process is empty.  We may change our mind later.
+            // As far as we know the process is empty. We may change our mind later.
             schedGroup = Process.THREAD_GROUP_BG_NONINTERACTIVE;
-            // At this point we don't actually know the adjustment.  Use the cached adj
+            // At this point we don't actually know the adjustment. Use the cached adj
             // value that the caller wants us to.
             adj = cachedAdj;
             procState = ActivityManager.PROCESS_STATE_CACHED_EMPTY;
@@ -14389,8 +14407,8 @@ public final class ActivityManagerService extends ActivityManagerNative
                         app.adjType = "stopping";
                     }
                     // For the process state, we will at this point consider the
-                    // process to be cached.  It will be cached either as an activity
-                    // or empty depending on whether the activity is finishing.  We do
+                    // process to be cached. It will be cached either as an activity
+                    // or empty depending on whether the activity is finishing. We do
                     // this so that we can treat the process as cached for purposes of
                     // memory trimming (determing current memory level, trim command to
                     // send to process) since there can be an arbitrary number of stopping
@@ -14480,7 +14498,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (false) Slog.i(TAG, "OOM " + app + ": initial adj=" + adj
                 + " reason=" + app.adjType);
 
-        // By default, we use the computed adjustment.  It may be changed if
+        // By default, we use the computed adjustment. It may be changed if
         // there are applications dependent on our services or providers, but
         // this gives us a baseline and makes sure we don't get into an
         // infinite recursion.
@@ -14520,7 +14538,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 if (app.hasShownUi && app != mHomeProcess) {
                     // If this process has shown some UI, let it immediately
                     // go to the LRU list because it may be pretty heavy with
-                    // UI stuff.  We'll tag it with a label just to help
+                    // UI stuff. We'll tag it with a label just to help
                     // debug and understand what is going on.
                     if (adj > ProcessList.SERVICE_ADJ) {
                         app.adjType = "cch-started-ui-services";
@@ -14572,7 +14590,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         int clientProcState = client.curProcState;
                         if (clientProcState >= ActivityManager.PROCESS_STATE_CACHED_ACTIVITY) {
                             // If the other app is cached for any reason, for purposes here
-                            // we are going to consider it empty.  The specific cached state
+                            // we are going to consider it empty. The specific cached state
                             // doesn't propagate except under certain conditions.
                             clientProcState = ActivityManager.PROCESS_STATE_CACHED_EMPTY;
                         }
@@ -14583,7 +14601,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                             if (app.hasShownUi && app != mHomeProcess) {
                                 // If this process has shown some UI, let it immediately
                                 // go to the LRU list because it may be pretty heavy with
-                                // UI stuff.  We'll tag it with a label just to help
+                                // UI stuff. We'll tag it with a label just to help
                                 // debug and understand what is going on.
                                 if (adj > clientAdj) {
                                     adjType = "cch-bound-ui-services";
@@ -14597,7 +14615,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                                     // This service has not seen activity within
                                     // recent memory, so allow it to drop to the
                                     // LRU list if there is no other reason to keep
-                                    // it around.  We'll also tag it with a label just
+                                    // it around. We'll also tag it with a label just
                                     // to help debug and undertand what is going on.
                                     if (adj > clientAdj) {
                                         adjType = "cch-bound-services";
@@ -14650,9 +14668,9 @@ public final class ActivityManagerService extends ActivityManagerNative
                                     // Special handling of clients who are in the top state.
                                     // We *may* want to consider this process to be in the
                                     // top state as well, but only if there is not another
-                                    // reason for it to be running.  Being on the top is a
+                                    // reason for it to be running. Being on the top is a
                                     // special state, meaning you are specifically running
-                                    // for the current top app.  If the process is already
+                                    // for the current top app. If the process is already
                                     // running in the background for some other reason, it
                                     // is more important to continue considering it to be
                                     // in the background state.
@@ -14660,8 +14678,8 @@ public final class ActivityManagerService extends ActivityManagerNative
                                     clientProcState = ActivityManager.PROCESS_STATE_CACHED_EMPTY;
                                 } else {
                                     // Special handling for above-top states (persistent
-                                    // processes).  These should not bring the current process
-                                    // into the top state, since they are not on top.  Instead
+                                    // processes). These should not bring the current process
+                                    // into the top state, since they are not on top. Instead
                                     // give them the best state after that.
                                     clientProcState =
                                             ActivityManager.PROCESS_STATE_IMPORTANT_FOREGROUND;
@@ -14758,9 +14776,9 @@ public final class ActivityManagerService extends ActivityManagerNative
                         // Special handling of clients who are in the top state.
                         // We *may* want to consider this process to be in the
                         // top state as well, but only if there is not another
-                        // reason for it to be running.  Being on the top is a
+                        // reason for it to be running. Being on the top is a
                         // special state, meaning you are specifically running
-                        // for the current top app.  If the process is already
+                        // for the current top app. If the process is already
                         // running in the background for some other reason, it
                         // is more important to continue considering it to be
                         // in the background state.
@@ -14768,8 +14786,8 @@ public final class ActivityManagerService extends ActivityManagerNative
                         clientProcState = ActivityManager.PROCESS_STATE_CACHED_EMPTY;
                     } else {
                         // Special handling for above-top states (persistent
-                        // processes).  These should not bring the current process
-                        // into the top state, since they are not on top.  Instead
+                        // processes). These should not bring the current process
+                        // into the top state, since they are not on top. Instead
                         // give them the best state after that.
                         clientProcState =
                                 ActivityManager.PROCESS_STATE_IMPORTANT_FOREGROUND;
@@ -14801,9 +14819,9 @@ public final class ActivityManagerService extends ActivityManagerNative
         }
 
         if (mayBeTop && procState > ActivityManager.PROCESS_STATE_TOP) {
-            // A client of one of our services or providers is in the top state.  We
+            // A client of one of our services or providers is in the top state. We
             // *may* want to be in the top state, but not if we are already running in
-            // the background for some other reason.  For the decision here, we are going
+            // the background for some other reason. For the decision here, we are going
             // to pick out a few specific states that we want to remain in when a client
             // is top (states that tend to be longer-term) and otherwise allow it to go
             // to the top state.
@@ -14823,7 +14841,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         }
 
         if (procState >= ActivityManager.PROCESS_STATE_CACHED_EMPTY && app.hasClientActivities) {
-            // This is a cached process, but with client activities.  Mark it so.
+            // This is a cached process, but with client activities. Mark it so.
             procState = ActivityManager.PROCESS_STATE_CACHED_ACTIVITY_CLIENT;
             app.adjType = "cch-client-act";
         }
@@ -14859,7 +14877,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         app.curRawAdj = adj;
         
         //Slog.i(TAG, "OOM ADJ " + app + ": pid=" + app.pid +
-        //      " adj=" + adj + " curAdj=" + app.curAdj + " maxAdj=" + app.maxAdj);
+        // " adj=" + adj + " curAdj=" + app.curAdj + " maxAdj=" + app.maxAdj);
         if (adj > app.maxAdj) {
             adj = app.maxAdj;
             if (app.maxAdj <= ProcessList.PERCEPTIBLE_APP_ADJ) {
@@ -14870,9 +14888,9 @@ public final class ActivityManagerService extends ActivityManagerNative
             app.keeping = true;
         }
 
-        // Do final modification to adj.  Everything we do between here and applying
+        // Do final modification to adj. Everything we do between here and applying
         // the final setAdj must be done in this function, because we will also use
-        // it when computing the final cached adj later.  Note that we don't need to
+        // it when computing the final cached adj later. Note that we don't need to
         // worry about this for max adj above, since max adj will always be used to
         // keep it out of the cached vaues.
         adj = app.modifyRawOomAdj(adj);
@@ -14891,7 +14909,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             } else if (adj >= ProcessList.CACHED_APP_MIN_ADJ) {
                 importance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_BACKGROUND;
             } else if (adj >= ProcessList.SERVICE_B_ADJ) {
-                importance =  ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE;
+                importance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE;
             } else if (adj >= ProcessList.HOME_APP_ADJ) {
                 importance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_BACKGROUND;
             } else if (adj >= ProcessList.SERVICE_ADJ) {
@@ -14987,7 +15005,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 return;
             }
         }
-        if (DEBUG_PSS) Slog.d(TAG, "Requesting PSS of all procs!  memLowered=" + memLowered);
+        if (DEBUG_PSS) Slog.d(TAG, "Requesting PSS of all procs! memLowered=" + memLowered);
         mLastFullPssTime = now;
         mPendingPssProcesses.ensureCapacity(mLruProcesses.size());
         mPendingPssProcesses.clear();
@@ -15058,7 +15076,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         return;
                     } else {
                         // It hasn't been long enough since we last GCed this
-                        // process...  put it in the list to wait for its time.
+                        // process... put it in the list to wait for its time.
                         addProcessToGcListLocked(proc);
                         break;
                     }
@@ -15102,8 +15120,8 @@ public final class ActivityManagerService extends ActivityManagerNative
     }
     
     /**
-     * Add a process to the array of processes waiting to be GCed.  Keeps the
-     * list in sorted order by the last GC time.  The process can't already be
+     * Add a process to the array of processes waiting to be GCed. Keeps the
+     * list in sorted order by the last GC time. The process can't already be
      * on the list.
      */
     final void addProcessToGcListLocked(ProcessRecord proc) {
@@ -15122,7 +15140,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     }
     
     /**
-     * Set up to ask a process to GC itself.  This will either do it
+     * Set up to ask a process to GC itself. This will either do it
      * immediately, or put it on the list of processes to gc the next
      * time things are idle.
      */
@@ -15202,7 +15220,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 }
                 // If a process has held a wake lock for more
                 // than 50% of the time during this period,
-                // that sounds bad.  Kill!
+                // that sounds bad. Kill!
                 if (doWakeKills && realtimeSince > 0
                         && ((wtimeUsed*100)/realtimeSince) >= 50) {
                     synchronized (stats) {
@@ -15235,7 +15253,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
         if (app.curRawAdj != app.setRawAdj) {
             if (wasKeeping && !app.keeping) {
-                // This app is no longer something we want to keep.  Note
+                // This app is no longer something we want to keep. Note
                 // its current wake lock time to later know to kill it if
                 // it is not behaving well.
                 BatteryStatsImpl stats = mBatteryStatsService.getActiveStatistics();
@@ -15379,7 +15397,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         mAdjSeq++;
 
         // This is the desired cached adjusment we want to tell it to use.
-        // If our app is currently cached, we know it, and that is it.  Otherwise,
+        // If our app is currently cached, we know it, and that is it. Otherwise,
         // we don't know it yet, and it needs to now be cached we will then
         // need to do a complete oom adj.
         final int cachedAdj = app.curRawAdj >= ProcessList.CACHED_APP_MIN_ADJ
@@ -15493,7 +15511,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                             break;
                         default:
                             // For everything else, assign next empty cached process
-                            // level and bump that up.  Note that this means that
+                            // level and bump that up. Note that this means that
                             // long-running services that have dropped down to the
                             // cached level will be treated as empty (since their process
                             // state is still as a service), which is what we want.
@@ -15550,7 +15568,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 if (app.isolated && app.services.size() <= 0) {
                     // If this is an isolated process, and there are no
                     // services running in it, then the process is no longer
-                    // needed.  We agressively kill these because we can by
+                    // needed. We agressively kill these because we can by
                     // definition not re-use the same process again, and it is
                     // good to avoid having whatever code was running in them
                     // left sitting around after no longer needed.
@@ -15568,7 +15586,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
         // Now determine the memory trimming level of background processes.
         // Unfortunately we need to start at the back of the list to do this
-        // properly.  We only do this if the number of background apps we
+        // properly. We only do this if the number of background apps we
         // are managing to keep around is less than half the maximum we desire;
         // if we are keeping a good number around, we'll let them use whatever
         // memory they want.
@@ -15586,7 +15604,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         } else {
             memFactor = ProcessStats.ADJ_MEM_FACTOR_NORMAL;
         }
-        // We always allow the memory level to go up (better).  We only allow it to go
+        // We always allow the memory level to go up (better). We only allow it to go
         // down if we are in a state where that is allowed, *and* the total number of processes
         // has gone down since last time.
         if (DEBUG_OOM_ADJ) Slog.d(TAG, "oom: memFactor=" + memFactor + " last=" + mLastMemoryLevel
@@ -16075,7 +16093,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
                 final UserStartedState uss = mStartedUsers.get(userId);
 
-                // Make sure user is in the started state.  If it is currently
+                // Make sure user is in the started state. If it is currently
                 // stopping, we need to knock that off.
                 if (uss.mState == UserStartedState.STATE_STOPPING) {
                     // If we are stopping, we haven't sent ACTION_SHUTDOWN,
@@ -16354,7 +16372,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
         final UserStartedState uss = mStartedUsers.get(userId);
         if (uss == null) {
-            // User is not started, nothing to do...  but we do need to
+            // User is not started, nothing to do... but we do need to
             // callback if requested.
             if (callback != null) {
                 mHandler.post(new Runnable() {
@@ -16405,7 +16423,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         // On to the next.
                         synchronized (ActivityManagerService.this) {
                             if (uss.mState != UserStartedState.STATE_STOPPING) {
-                                // Whoops, we are being started back up.  Abort, abort!
+                                // Whoops, we are being started back up. Abort, abort!
                                 return;
                             }
                             uss.mState = UserStartedState.STATE_SHUTDOWN;
@@ -16530,7 +16548,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
     private void updateStartedUserArrayLocked() {
         int num = 0;
-        for (int i=0; i<mStartedUsers.size();  i++) {
+        for (int i=0; i<mStartedUsers.size(); i++) {
             UserStartedState uss = mStartedUsers.valueAt(i);
             // This list does not include stopping users.
             if (uss.mState != UserStartedState.STATE_STOPPING
@@ -16540,7 +16558,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         }
         mStartedUserArray = new int[num];
         num = 0;
-        for (int i=0; i<mStartedUsers.size();  i++) {
+        for (int i=0; i<mStartedUsers.size(); i++) {
             UserStartedState uss = mStartedUsers.valueAt(i);
             if (uss.mState != UserStartedState.STATE_STOPPING
                     && uss.mState != UserStartedState.STATE_SHUTDOWN) {

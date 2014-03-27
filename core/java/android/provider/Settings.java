@@ -3282,6 +3282,33 @@ public final class Settings {
             "navigation_ring_targets_2",
         };
 
+       /**
+         * ListView Animations
+         * 0 == None
+         * 1 == Wave (Left)
+         * 2 == Wave (Right)
+         * 3 == Scale
+         * 4 == Alpha
+         * 5 == Stack (Top)
+         * 6 == Stack (Bottom)
+         * 7 == Translate (Left)
+         * 8 == Translate (Right)
+         */
+        public static final String LISTVIEW_ANIMATION = "listview_animation";
+
+        /**
+         * ListView Interpolators
+         * 0 == None
+         * 1 == accelerate_interpolator
+         * 2 == decelerate_interpolator
+         * 3 == accelerate_decelerate_interpolator
+         * 4 == anticipate_interpolator
+         * 5 == overshoot_interpolator
+         * 6 == anticipate_overshoot_interpolator
+         * 7 == bounce_interpolator
+         */
+        public static final String LISTVIEW_INTERPOLATOR = "listview_interpolator";
+
         /**
          * Whether to enable quiet hours.
          * @hide
@@ -5400,6 +5427,21 @@ public final class Settings {
         public static final String UI_NIGHT_MODE = "ui_night_mode";
 
         /**
+        * The current theme mode that has been selected by the user. Owned
+	* and controlled by UiModeManagerService.	
+	* @hide
+	*/	
+	public static final String UI_THEME_MODE = "ui_theme_mode";	
+
+	/**	
+	* Auto theme mode which switches either based on daytime or lightsensor	
+	* values: 0 = manual (default), 1 = auto twilight (based on daytime)	
+	* 2 = auto lightsensor (based on light conditions)
+	* @hide	
+	*/	
+	public static final String UI_THEME_AUTO_MODE = "ui_theme_auto_mode";
+	
+        /**
          * Whether screensavers are enabled.
          * @hide
          */
@@ -5535,6 +5577,8 @@ public final class Settings {
             MOUNT_UMS_PROMPT,
             MOUNT_UMS_NOTIFY_ENABLED,
             UI_NIGHT_MODE,
+            UI_THEME_MODE,
+            UI_THEME_AUTO_MODE,
             ADVANCED_REBOOT
         };
 

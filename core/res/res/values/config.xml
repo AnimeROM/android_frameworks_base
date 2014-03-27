@@ -417,6 +417,13 @@
          Any other values will have surprising consequences. -->
     <integer name="config_defaultUiModeType">1</integer>
 
+    <!-- Control the default theme mode for the UI to use.	
+    One of the following values (See Configuration.java):	
+    1 UI_THEME_MODE_NORMAL (default)	
+    2 UI_THEME_MODE_HOLO_DARK	
+    3 UI_THEME_MODE_HOLO_LIGHT -->	
+    <integer name="config_uiThemeMode">1</integer>
+
     <!-- Control whether being in the desk dock (and powered) always
          keeps the screen on.  By default it stays on when plugged in to
          AC.  0 will not keep it on; or together 1 to stay on when plugged
@@ -693,6 +700,9 @@
 
     <!-- Boolean indicating whether we want button brightness support -->
     <bool name="config_button_brightness_support">false</bool>
+    
+    <!-- Fix for Devices with this config -->
+    
 
     <!-- Array of output values for keyboard backlight corresponding to the LUX values
          in the config_autoBrightnessLevels array.  This array should have size one greater

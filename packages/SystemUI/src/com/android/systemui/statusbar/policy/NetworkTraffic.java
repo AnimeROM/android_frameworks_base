@@ -1,3 +1,14 @@
+/*
+
+Traffic data sow by TeamMEX 
+for AnimeROM Project
+
+(C) 2014 AnimeROM Project
+
+Licence GPL
+
+*/
+
 package com.android.systemui.statusbar.policy;
 
 import java.text.DecimalFormat;

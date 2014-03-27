@@ -2087,4 +2087,7 @@
   <public type="style" name="Theme.DeviceDefault.NoActionBar.TranslucentDecor" id="0x010301e3" />
   <public type="style" name="Theme.DeviceDefault.Light.NoActionBar.TranslucentDecor" id="0x010301e4" />
 
+  <!-- White UI Style -->
+  <public type="color" name="holo_white_dark" id="0x0106001c" />
+
 </resources>

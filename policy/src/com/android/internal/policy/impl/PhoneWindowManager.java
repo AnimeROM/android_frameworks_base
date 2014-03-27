@@ -1,5 +1,5 @@
 /*
- * Modifications Copyright (C) 2013 The OmniROM Project
+ * Modifications Copyright (C) 2014 The AnimeROM Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3510,6 +3510,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 if (r.bottom > mStableBottom) r.bottom = mStableBottom;
             }
         }
+    }
+
+    public Rect getContentRect() {
+        return new Rect(mContentLeft, mContentTop, mContentRight, mContentBottom);
     }
 
     /** {@inheritDoc} */
