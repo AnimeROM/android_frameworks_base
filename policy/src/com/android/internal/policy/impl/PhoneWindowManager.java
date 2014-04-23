@@ -110,6 +110,7 @@ import com.android.internal.telephony.ITelephony;
 import com.android.internal.widget.PointerLocationView;
 import com.android.internal.util.omni.OmniTorchConstants;
 import com.android.internal.util.omni.TaskUtils;
+import com.android.internal.util.omni.DimensionConverter;
 
 import com.android.internal.util.omni.DeviceUtils;
 import static com.android.internal.util.omni.DeviceUtils.IMMERSIVE_MODE_OFF;
@@ -140,7 +141,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     static final boolean DEBUG = false;
     static final boolean localLOGV = false;
     static final boolean DEBUG_LAYOUT = false;
-    static final boolean DEBUG_INPUT = false;
+    static boolean DEBUG_INPUT = false;
     static final boolean DEBUG_STARTING_WINDOW = false;
     static final boolean SHOW_STARTING_ANIMATIONS = true;
     static final boolean SHOW_PROCESSES_ON_ALT_MENU = false;
@@ -721,6 +722,15 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.ACCELEROMETER_ROTATION_ANGLES), false, this,
                     UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.NAVIGATION_BAR_HEIGHT), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.NAVIGATION_BAR_HEIGHT_LANDSCAPE), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.NAVIGATION_BAR_WIDTH), false, this,
+                    UserHandle.USER_ALL);
             updateSettings();
         }
 
@@ -937,8 +947,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             int resolvedBehavior = mLongPressOnPowerBehavior;
             KeyguardManager km = (KeyguardManager) mContext.getSystemService(Context.KEYGUARD_SERVICE);
             boolean locked = km.inKeyguardRestrictedInputMode();
-            boolean globalActionsOnLockScreen = Settings.System.getInt(
-                    mContext.getContentResolver(), Settings.System.LOCKSCREEN_ENABLE_POWER_MENU, 1) == 1;
+            boolean globalActionsOnLockScreen = Settings.System.getIntForUser(
+                    mContext.getContentResolver(),
+                    Settings.System.LOCKSCREEN_ENABLE_POWER_MENU, 1, UserHandle.USER_CURRENT) == 1;
             if (locked && !globalActionsOnLockScreen) {
                 resolvedBehavior = LONG_PRESS_POWER_NOTHING;
             }
@@ -1121,6 +1132,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         mWindowManager = windowManager;
         mWindowManagerFuncs = windowManagerFuncs;
         mHeadless = "1".equals(SystemProperties.get("ro.config.headless", "0"));
+        boolean debugInputOverride = SystemProperties.getInt("config.override_debugInput", 0) == 1;
+        DEBUG_INPUT = DEBUG_INPUT || debugInputOverride;
         mHandler = new PolicyHandler();
         mOrientationListener = new MyOrientationListener(mContext, mHandler);
         try {
@@ -1529,6 +1542,48 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     Settings.System.VOLUME_MUSIC_CONTROL, 0, UserHandle.USER_CURRENT) != 0;
 
             updateKeyAssignments();
+
+            if (mHasNavigationBar) {
+                // Height of the navigation bar when presented horizontally at bottom *******
+                int navigationBarHeight = Settings.System.getIntForUser(mContext.getContentResolver(),
+                        Settings.System.NAVIGATION_BAR_HEIGHT,
+                        -1, UserHandle.USER_CURRENT);
+                if (navigationBarHeight == -1) {
+                    navigationBarHeight = mContext.getResources().getDimensionPixelSize(
+                        com.android.internal.R.dimen.navigation_bar_height);
+                } else {
+                    navigationBarHeight = DimensionConverter.pxFromDp(mContext, navigationBarHeight);
+                }
+                mNavigationBarHeightForRotation[mPortraitRotation] =
+                mNavigationBarHeightForRotation[mUpsideDownRotation] = navigationBarHeight;
+
+                int navigationBarHeightLandscape = Settings.System.getIntForUser(mContext.getContentResolver(),
+                        Settings.System.NAVIGATION_BAR_HEIGHT_LANDSCAPE,
+                        -1, UserHandle.USER_CURRENT);
+                if (navigationBarHeightLandscape == -1) {
+                    navigationBarHeightLandscape = mContext.getResources().getDimensionPixelSize(
+                        com.android.internal.R.dimen.navigation_bar_height_landscape);
+                } else {
+                    navigationBarHeightLandscape = DimensionConverter.pxFromDp(mContext, navigationBarHeightLandscape);
+                }
+                mNavigationBarHeightForRotation[mLandscapeRotation] =
+                mNavigationBarHeightForRotation[mSeascapeRotation] = navigationBarHeightLandscape;
+
+                // Width of the navigation bar when presented vertically along one side
+                int navigationBarWidth = Settings.System.getIntForUser(mContext.getContentResolver(),
+                        Settings.System.NAVIGATION_BAR_WIDTH,
+                        -1, UserHandle.USER_CURRENT);
+                if (navigationBarWidth == -1) {
+                    navigationBarWidth = mContext.getResources().getDimensionPixelSize(
+                        com.android.internal.R.dimen.navigation_bar_width);
+                } else {
+                    navigationBarWidth = DimensionConverter.pxFromDp(mContext, navigationBarWidth);
+                }
+                mNavigationBarWidthForRotation[mPortraitRotation] =
+                mNavigationBarWidthForRotation[mUpsideDownRotation] =
+                mNavigationBarWidthForRotation[mLandscapeRotation] =
+                mNavigationBarWidthForRotation[mSeascapeRotation] = navigationBarWidth;
+            }
 
             if (mSystemReady) {
                 int pointerLocation = Settings.System.getIntForUser(resolver,
@@ -4785,8 +4840,15 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         }
 
-        if (!isScreenOn && mOffscreenGestureSupport) {
-            handleOffscreenGesture(event, keyCode, result, down);
+        if (mOffscreenGestureSupport) {
+            if (!isScreenOn){
+                handleOffscreenGesture(event, keyCode, result, down);
+            } else {
+                if (handleOnscreenGesture(event, keyCode, result, down)){
+                    // dont pass further if handled
+                    result &= ~ACTION_PASS_TO_USER;
+                }
+            }
         }
         return result;
     }
@@ -6257,11 +6319,17 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
     private boolean isOffscreenWakeKey(int keyCode) {
         return keyCode == KeyEvent.KEYCODE_F3 ||
-            keyCode == KeyEvent.KEYCODE_F4;
+            keyCode == KeyEvent.KEYCODE_F4 ||
+            keyCode == KeyEvent.KEYCODE_F1;
     }
 
     private void handleOffscreenGesture(KeyEvent event, int keyCode, int result, boolean down) {
         switch (keyCode) {
+            case KeyEvent.KEYCODE_F1:
+                // camera flip - nomulti-user here
+                if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.OPPO_CAMERA_FLIP_ENABLED, 1) == 0){
+                    break;
+                }
             case KeyEvent.KEYCODE_F4:
                 // O gesture
                 if (down){
@@ -6321,6 +6389,30 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 break;
         }
     }
+
+    private boolean handleOnscreenGesture(KeyEvent event, int keyCode, int result, boolean down) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_F1:
+                // camera flip
+                if (down){
+                    // no multi-user here
+                    if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.OPPO_CAMERA_FLIP_ENABLED, 1) == 0){
+                        break;
+                    }
+                    if (DEBUG_INPUT){
+                        Slog.d(TAG, "handleOnscreenGesture: " + "camera flip");
+                    }
+                    dismissKeyguardLw();
+                    Intent intent = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    mContext.startActivityAsUser(intent, UserHandle.CURRENT);
+                    return true;
+                }
+                break;
+        }
+        return false;
+    }
+
 
     private Message createMediaEventMessage(KeyEvent event, int msgId, int eventId) {
         return mHandler.obtainMessage(msgId,
