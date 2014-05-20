@@ -75,6 +75,7 @@ import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.VolumePanel;
 import android.view.WindowManager;
+import com.android.internal.util.omni.PackageUtils;
 
 import com.android.internal.telephony.ITelephony;
 import com.android.internal.util.XmlUtils;
@@ -88,6 +89,7 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -553,6 +555,7 @@ public class AudioService extends IAudioService.Stub {
         intentFilter.addAction(Intent.ACTION_SCREEN_ON);
         intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
         intentFilter.addAction(Intent.ACTION_USER_SWITCHED);
+        intentFilter.addAction(Intent.ACTION_HEADSET_PLUG);
 
         intentFilter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
         // TODO merge orientation and rotation
@@ -4411,6 +4414,52 @@ public class AudioService extends IAudioService.Stub {
                         0,
                         0,
                         mStreamStates[AudioSystem.STREAM_MUSIC], 0);
+            } else if (action.equals(Intent.ACTION_HEADSET_PLUG)) {
+                // Only run when headset is inserted and is enabled at settings
+                int plugged = intent.getIntExtra("state", 0);
+
+                String headsetPlugIntenatUri = Settings.System.getStringForUser(context.getContentResolver(),
+                        Settings.System.HEADSET_PLUG_ENABLED, UserHandle.USER_CURRENT);
+                boolean disableMusicActive = Settings.System.getIntForUser(context.getContentResolver(),
+                        Settings.System.HEADSET_PLUG_MUSIC_ACTIVE, 1, UserHandle.USER_CURRENT) == 1;
+
+                Intent headsetPlugIntent = null;
+
+                if (plugged == 1 && headsetPlugIntenatUri != null){
+                    if (disableMusicActive && isLocalOrRemoteMusicActive()) {
+                        return;
+                    }
+                    // Run default music app
+                    if (headsetPlugIntenatUri.equals(Settings.System.HEADSET_PLUG_SYSTEM_DEFAULT)) {
+
+                        headsetPlugIntent = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN,
+                            Intent.CATEGORY_APP_MUSIC);
+                        headsetPlugIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivityAsUser(headsetPlugIntent, UserHandle.CURRENT);
+                    } else { // Try open a custom app
+
+                        try {
+                            headsetPlugIntent = Intent.parseUri(headsetPlugIntenatUri, 0);
+                        } catch (URISyntaxException e) {
+                            headsetPlugIntent = null;
+                        }
+
+                        if (headsetPlugIntent != null) {
+
+                            String mPackage = headsetPlugIntent.getComponent()
+                                .getPackageName();
+
+                            if (PackageUtils.isAvailableApp(mPackage, context)) {
+                               headsetPlugIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                               context.startActivityAsUser(headsetPlugIntent, UserHandle.CURRENT);
+                            } else {
+                               // Disable setting
+                               Settings.System.putStringForUser(context.getContentResolver(),
+                                  Settings.System.HEADSET_PLUG_ENABLED, null, UserHandle.USER_CURRENT);
+                            }
+                        }
+                    }
+                }
             }
         }
     }

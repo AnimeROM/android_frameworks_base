@@ -85,6 +85,7 @@ import com.android.systemui.statusbar.policy.BluetoothController;
 import com.android.systemui.statusbar.policy.LocationController;
 import com.android.systemui.statusbar.policy.NetworkController;
 import com.android.systemui.statusbar.policy.RotationLockController;
+import com.android.internal.util.slim.QuietHoursHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -112,7 +113,7 @@ class QuickSettings {
         IMMERSIVE,
         LOCATION,
         AIRPLANE,
-        QUITEHOUR,
+        QUIETHOUR,
         SLEEP,
         SYNC,
         USBMODE,
@@ -125,7 +126,7 @@ class QuickSettings {
         + DELIMITER + Tile.SETTINGS + DELIMITER + Tile.WIFI + DELIMITER + Tile.TORCH
         + DELIMITER + Tile.RSSI + DELIMITER + Tile.BLUETOOTH + DELIMITER + Tile.VOLUME
         + DELIMITER + Tile.BATTERY + DELIMITER + Tile.ROTATION+ DELIMITER + Tile.IMMERSIVE
-        + DELIMITER + Tile.LOCATION + DELIMITER + Tile.AIRPLANE + DELIMITER + Tile.QUITEHOUR
+        + DELIMITER + Tile.LOCATION + DELIMITER + Tile.AIRPLANE + DELIMITER + Tile.QUIETHOUR
         + DELIMITER + Tile.USBMODE + DELIMITER + Tile.SLEEP + DELIMITER + Tile.SYNC
         + DELIMITER + Tile.NFC;
 
@@ -153,6 +154,7 @@ class QuickSettings {
 
     private Handler mHandler;
     private QuickSettingsBatteryFlipTile mBatteryTile;
+    private QuickSettingsFlipTile mImmersiveTile;
     private int mBatteryStyle;
 
     private PowerManager pm;
@@ -744,33 +746,33 @@ class QuickSettings {
                   if (addMissing) mBatteryTile.setVisibility(View.GONE);
                } else if (Tile.IMMERSIVE.toString().equals(tile.toString())) { // Immersive tile
                   // Immersive mode
-                  final QuickSettingsFlipTile immersiveTile
-                       = new QuickSettingsFlipTile(mContext);
+                  mImmersiveTile = new QuickSettingsFlipTile(mContext);
 
-                  immersiveTile.setTileId(Tile.IMMERSIVE);
-                  immersiveTile.setSupportFlip(DeviceUtils.deviceSupportNavigationBar(mContext));
-                  immersiveTile.setFrontImageResource(R.drawable.ic_qs_immersive_global_off);
-                  immersiveTile.setFrontText(mContext.getString(R.string.quick_settings_immersive_global_off_label));
-                  mModel.addImmersiveFrontTile(immersiveTile.getFront(), new QuickSettingsModel.RefreshCallback() {
+                  mModel.addImmersiveTile(mImmersiveTile);
+                  mImmersiveTile.setTileId(Tile.IMMERSIVE);
+                  mImmersiveTile.setSupportFlip(DeviceUtils.deviceSupportNavigationBar(mContext));
+                  mImmersiveTile.setFrontImageResource(R.drawable.ic_qs_immersive_global_off);
+                  mImmersiveTile.setFrontText(mContext.getString(R.string.quick_settings_immersive_global_off_label));
+                  mModel.addImmersiveFrontTile(mImmersiveTile.getFront(), new QuickSettingsModel.RefreshCallback() {
                         @Override
                         public void refreshView(QuickSettingsTileView unused, State state) {
-                            immersiveTile.setFrontImageResource(state.iconId);
-                            immersiveTile.setFrontText(state.label);
+                            mImmersiveTile.setFrontImageResource(state.iconId);
+                            mImmersiveTile.setFrontText(state.label);
 
                         }
                   });
-                  immersiveTile.setBackImageResource(R.drawable.ic_qs_immersive_off);
-                  immersiveTile.setBackLabel(mContext.getString(R.string.quick_settings_volume_status));
-                  mModel.addImmersiveBackTile(immersiveTile.getBack(), new QuickSettingsModel.RefreshCallback() {
+                  mImmersiveTile.setBackImageResource(R.drawable.ic_qs_immersive_off);
+                  mImmersiveTile.setBackLabel(mContext.getString(R.string.quick_settings_volume_status));
+                  mModel.addImmersiveBackTile(mImmersiveTile.getBack(), new QuickSettingsModel.RefreshCallback() {
                         @Override
                         public void refreshView(QuickSettingsTileView unused, State state) {
-                            immersiveTile.setBackImageResource(state.iconId);
-                            immersiveTile.setBackFunction(state.label);
+                            mImmersiveTile.setBackImageResource(state.iconId);
+                            mImmersiveTile.setBackFunction(state.label);
 
                         }
                   });
-                  parent.addView(immersiveTile);
-                  if (addMissing) immersiveTile.setVisibility(View.GONE);
+                  parent.addView(mImmersiveTile);
+                  if (addMissing) mImmersiveTile.setVisibility(View.GONE);
                } else if (Tile.AIRPLANE.toString().equals(tile.toString())) { // airplane tile
                   // Airplane Mode
                   final QuickSettingsBasicTile airplaneTile
@@ -869,29 +871,62 @@ class QuickSettings {
                   });
                   parent.addView(SyncTile);
                   if (addMissing) SyncTile.setVisibility(View.GONE);
-               } else if (Tile.QUITEHOUR.toString().equals(tile.toString())) { // Quite hours tile
-                  // Quite hours mode
-                  final QuickSettingsBasicTile quiteHourTile
+               } else if (Tile.QUIETHOUR.toString().equals(tile.toString())) { // Quiet hours tile
+                  // Quiet hours mode
+                  final QuickSettingsBasicTile quietHourTile
                        = new QuickSettingsBasicTile(mContext);
 
-                  quiteHourTile.setTileId(Tile.QUITEHOUR);
-                  quiteHourTile.setImageResource(R.drawable.ic_qs_quiet_hours_off);
-                  quiteHourTile.setTextResource(R.string.quick_settings_quiethours_off_label);
-                  quiteHourTile.setOnClickListener(new View.OnClickListener() {
-                       @Override
-                       public void onClick(View v) {
-                           boolean checkModeOn = Settings.System.getIntForUser(mContext
-                                  .getContentResolver(), Settings.System.QUIET_HOURS_ENABLED, 0
-                                  , UserHandle.USER_CURRENT) != 0;
-                           Settings.System.putIntForUser(mContext.getContentResolver(),
-                                 Settings.System.QUIET_HOURS_ENABLED, checkModeOn ? 0 : 1
-                                 , UserHandle.USER_CURRENT);
-                           Intent scheduleSms = new Intent();
-                           scheduleSms.setAction("com.android.settings.slim.service.SCHEDULE_SERVICE_COMMAND");
-                           mContext.sendBroadcast(scheduleSms);
+                  quietHourTile.setTileId(Tile.QUIETHOUR);
+                  quietHourTile.setImageResource(R.drawable.ic_qs_quiet_hours_off);
+                  quietHourTile.setText(mContext.getString(R.string.quick_settings_quiethours_off_label));
+                  quietHourTile.setOnClickListener(new View.OnClickListener() {
+                      @Override
+                      public void onClick(View v) {
+                          boolean enabled = Settings.System.getIntForUser(mContext.getContentResolver(),
+                                  Settings.System.QUIET_HOURS_ENABLED, 0, UserHandle.USER_CURRENT) != 0;
+                          boolean paused = Settings.System.getIntForUser(mContext.getContentResolver(),
+                                  Settings.System.QUIET_HOURS_PAUSED, 0, UserHandle.USER_CURRENT) != 0;
+                          boolean forced = Settings.System.getIntForUser(mContext.getContentResolver(),
+                                  Settings.System.QUIET_HOURS_FORCED, 0, UserHandle.USER_CURRENT) != 0;
+                          boolean isActive = QuietHoursHelper.inQuietHours(mContext, null);
+
+                          // init quiet hours if required - service has never been started so far
+                          Intent intent = new Intent(QuietHoursHelper.SCHEDULE_SERVICE_COMMAND);
+                          mContext.sendBroadcastAsUser(intent, UserHandle.CURRENT);
+
+                          if (enabled){
+                              if (isActive){
+                                  // disable force if it was force started
+                                  if (forced){
+                                      Settings.System.putIntForUser(mContext.getContentResolver(),
+                                             Settings.System.QUIET_HOURS_FORCED, 0,
+                                             UserHandle.USER_CURRENT);
+                                  } else {
+                                      // time active
+                                      Settings.System.putIntForUser(mContext.getContentResolver(),
+                                             Settings.System.QUIET_HOURS_PAUSED, 1,
+                                             UserHandle.USER_CURRENT);
+                                  }
+                              } else {
+                                  if (paused){
+                                      Settings.System.putIntForUser(mContext.getContentResolver(),
+                                             Settings.System.QUIET_HOURS_PAUSED, 0,
+                                             UserHandle.USER_CURRENT);
+                                  } else {
+                                      // if not time active - start now
+                                      Settings.System.putIntForUser(mContext.getContentResolver(),
+                                              Settings.System.QUIET_HOURS_FORCED, 1,
+                                              UserHandle.USER_CURRENT);
+                                  }
+                              }
+                          } else {
+                              // if not enabled - enable
+                              Settings.System.putIntForUser(mContext.getContentResolver(),
+                                      Settings.System.QUIET_HOURS_ENABLED, 1, UserHandle.USER_CURRENT);
+                          }
                       }
                   });
-                  quiteHourTile.setOnLongClickListener(new View.OnLongClickListener() {
+                  quietHourTile.setOnLongClickListener(new View.OnLongClickListener() {
                       @Override
                       public boolean onLongClick(View v) {
                           Intent intent = new Intent(Intent.ACTION_MAIN);
@@ -901,10 +936,18 @@ class QuickSettings {
                           return true;
                       }
                   });
-                  mModel.addQuiteHourTile(quiteHourTile,
-                        new QuickSettingsModel.BasicRefreshCallback(quiteHourTile));
-                  parent.addView(quiteHourTile);
-                  if (addMissing) quiteHourTile.setVisibility(View.GONE);
+
+                  mModel.addQuietHourTile(quietHourTile,
+                        new QuickSettingsModel.RefreshCallback() {
+                        @Override
+                        public void refreshView(QuickSettingsTileView unused, State state) {
+                            quietHourTile.setImageResource(state.iconId);
+                            quietHourTile.setText(state.label);
+                        }
+                  });
+
+                  parent.addView(quietHourTile);
+                  if (addMissing) quietHourTile.setVisibility(View.GONE);
                } else if (Tile.VOLUME.toString().equals(tile.toString())) { // Volume tile
                   // Volume mode
                   final QuickSettingsFlipTile VolumeTile

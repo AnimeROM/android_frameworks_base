@@ -55,6 +55,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
+import android.util.Log;
 
 import com.android.internal.telephony.Phone;
 import com.android.internal.util.omni.OmniTorchConstants;
@@ -73,6 +74,7 @@ import com.android.systemui.statusbar.policy.LocationController.LocationSettings
 import com.android.systemui.statusbar.policy.NetworkController.NetworkSignalChangedCallback;
 import com.android.systemui.statusbar.policy.RotationLockController;
 import com.android.systemui.statusbar.policy.RotationLockController.RotationLockControllerCallback;
+import com.android.internal.util.slim.QuietHoursHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -127,6 +129,9 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     }
     static class QuiteHourState extends State {
         boolean isEnabled;
+        boolean isPaused;
+        boolean isForced;
+        boolean isActive;
     }
     public static class BluetoothState extends State {
         boolean connected = false;
@@ -393,6 +398,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
 
         @Override
         public void onChange(boolean selfChange) {
+            onImmersiveFlipChanged();
             onImmersiveFrontChanged();
             onImmersiveBackChanged();
         }
@@ -403,8 +409,20 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             cr.registerContentObserver(
                     Settings.System.getUriFor(Settings.System.IMMERSIVE_MODE),
                     false, this, mUserTracker.getCurrentUserId());
+            cr.registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.NAVIGATION_BAR_SHOW),
+                    false, this, mUserTracker.getCurrentUserId());
+
         }
     }
+
+    /** Broadcast receive to watch quitehour. */
+    private BroadcastReceiver mQuietHoursIntentReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            onQuiteHourChanged();
+        }
+    };
 
     /** ContentObserver to watch quitehour **/
     private class QuiteHourObserver extends ContentObserver {
@@ -422,6 +440,12 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             cr.unregisterContentObserver(this);
             cr.registerContentObserver(
                     Settings.System.getUriFor(Settings.System.QUIET_HOURS_ENABLED),
+                    false, this, mUserTracker.getCurrentUserId());
+            cr.registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.QUIET_HOURS_FORCED),
+                    false, this, mUserTracker.getCurrentUserId());
+            cr.registerContentObserver(
+                    Settings.System.getUriFor(Settings.System.QUIET_HOURS_PAUSED),
                     false, this, mUserTracker.getCurrentUserId());
         }
     }
@@ -457,7 +481,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     private final BugreportObserver mBugreportObserver;
     private final BrightnessObserver mBrightnessObserver;
     private final ImmersiveObserver mImmersiveObserver;
-    private final QuiteHourObserver mQuiteHourObserver;
+    private final QuiteHourObserver mQuietHourObserver;
     private final RingerObserver mRingerObserver;
     private final SleepObserver mSleepObserver;
     private LocationController mLocationController;
@@ -592,6 +616,8 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     private RefreshCallback mBrightnessCallback;
     private BrightnessState mBrightnessState = new BrightnessState();
 
+    private QuickSettingsFlipTile mImmersiveTile;
+
     private QuickSettingsTileView mImmersiveFrontTile;
     private RefreshCallback mImmersiveFrontCallback;
     private ImmersiveState mImmersiveFrontState = new ImmersiveState();
@@ -600,9 +626,9 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     private RefreshCallback mImmersiveBackCallback;
     private ImmersiveState mImmersiveBackState = new ImmersiveState();
 
-    private QuickSettingsTileView mQuiteHourTile;
-    private RefreshCallback mQuiteHourCallback;
-    private QuiteHourState mQuiteHourState = new QuiteHourState();
+    private QuickSettingsTileView mQuietHourTile;
+    private RefreshCallback mQuietHourCallback;
+    private QuiteHourState mQuietHourState = new QuiteHourState();
 
     private QuickSettingsTileView mBugreportTile;
     private RefreshCallback mBugreportCallback;
@@ -642,7 +668,7 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
             public void onUserSwitched(int newUserId) {
                 mBrightnessObserver.startObserving();
                 mImmersiveObserver.startObserving();
-                mQuiteHourObserver.startObserving();
+                mQuietHourObserver.startObserving();
                 mRingerObserver.startObserving();
                 mSleepObserver.startObserving();
                 mMobileNetworkObserver.startObserving();
@@ -663,8 +689,8 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         mBrightnessObserver.startObserving();
         mImmersiveObserver = new ImmersiveObserver(mHandler);
         mImmersiveObserver.startObserving();
-        mQuiteHourObserver = new QuiteHourObserver(mHandler);
-        mQuiteHourObserver.startObserving();
+        mQuietHourObserver = new QuiteHourObserver(mHandler);
+        mQuietHourObserver.startObserving();
         mSleepObserver = new SleepObserver(mHandler);
         mSleepObserver.startObserving();
         mRingerObserver = new RingerObserver(mHandler);
@@ -703,6 +729,11 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         IntentFilter torchIntentFilter = new IntentFilter();
         torchIntentFilter.addAction(OmniTorchConstants.ACTION_STATE_CHANGED);
         context.registerReceiver(mTorchIntentReceiver, torchIntentFilter);
+
+        IntentFilter quietHoursIntentFilter = new IntentFilter();
+        quietHoursIntentFilter.addAction(QuietHoursHelper.QUIET_HOURS_START);
+        quietHoursIntentFilter.addAction(QuietHoursHelper.QUIET_HOURS_STOP);
+        context.registerReceiver(mQuietHoursIntentReceiver, quietHoursIntentFilter);
 
         if(mSyncObserverHandle != null) {
             //Unregistering sync state listener
@@ -1865,6 +1896,10 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     // Immersive
     private int immersiveModeLastState = IMMERSIVE_MODE_FULL;
 
+    void addImmersiveTile(QuickSettingsFlipTile tile) {
+        mImmersiveTile = tile;
+    }
+
     void addImmersiveFrontTile(QuickSettingsTileView view, RefreshCallback cb) {
         mImmersiveFrontTile = view;
         mImmersiveFrontTile.setOnClickListener(new View.OnClickListener() {
@@ -1890,6 +1925,11 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         });
         mImmersiveBackCallback = cb;
         onImmersiveBackChanged();
+    }
+
+    private void onImmersiveFlipChanged() {
+        mImmersiveTile.flipToFront();
+        mImmersiveTile.setSupportFlip(DeviceUtils.deviceSupportNavigationBar(mContext));
     }
 
     private void onImmersiveFrontChanged() {
@@ -2008,9 +2048,9 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
     }
 
     // QuietHour
-    void addQuiteHourTile(QuickSettingsTileView view, RefreshCallback cb) {
-        mQuiteHourTile = view;
-        mQuiteHourCallback = cb;
+    void addQuietHourTile(QuickSettingsTileView view, RefreshCallback cb) {
+        mQuietHourTile = view;
+        mQuietHourCallback = cb;
         onQuiteHourChanged();
     }
 
@@ -2019,15 +2059,34 @@ class QuickSettingsModel implements BluetoothStateChangeCallback,
         int mode = Settings.System.getIntForUser(mContext.getContentResolver(),
                 Settings.System.QUIET_HOURS_ENABLED, 0,
                 mUserTracker.getCurrentUserId());
-        mQuiteHourState.isEnabled = (mode == 1);
-        mQuiteHourState.iconId = mQuiteHourState.isEnabled
+        int paused = Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.QUIET_HOURS_PAUSED, 0,
+                mUserTracker.getCurrentUserId());
+        int forced = Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.QUIET_HOURS_FORCED, 0,
+                mUserTracker.getCurrentUserId());
+
+        mQuietHourState.isEnabled = (mode == 1);
+        mQuietHourState.isPaused = (paused == 1);
+        mQuietHourState.isForced = (forced == 1);
+        mQuietHourState.isActive = QuietHoursHelper.inQuietHours(mContext, null);
+
+        mQuietHourState.iconId = mQuietHourState.isActive
                 ? R.drawable.ic_qs_quiet_hours_on
                 : R.drawable.ic_qs_quiet_hours_off;
-        mQuiteHourState.label = mQuiteHourState.isEnabled
-                ? r.getString(R.string.quick_settings_quiethours_label)
-                : r.getString(R.string.quick_settings_quiethours_off_label);
-        if (mQuiteHourTile != null) {
-            mQuiteHourCallback.refreshView(mQuiteHourTile, mQuiteHourState);
+
+        mQuietHourState.label = r.getString(R.string.quick_settings_quiethours_off_label);
+        if (mQuietHourState.isEnabled){
+            mQuietHourState.label = r.getString(R.string.quick_settings_quiethours_label);
+        }
+        if (mQuietHourState.isActive){
+            mQuietHourState.label = r.getString(R.string.quick_settings_quiethours_active_label);
+        }
+        if (mQuietHourState.isPaused){
+            mQuietHourState.label = r.getString(R.string.quick_settings_quiethours_paused_label);
+        }
+        if (mQuietHourTile != null) {
+            mQuietHourCallback.refreshView(mQuietHourTile, mQuietHourState);
         }
     }
 
