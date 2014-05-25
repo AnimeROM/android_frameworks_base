@@ -470,7 +470,7 @@ public class Peek implements SensorActivityHandler.SensorChangedCallback {
             mNotificationsContainer.setVisibility(View.GONE);
         }
         for (int i = 0; i < notificationCount; i++) {
-            final StatusBarNotification n = mStatusBar.getNotification().get(i).notification;
+            final StatusBarNotification n = mStatusBar.getNotifications().get(i).notification;
             ImageView icon = new ImageView(mContext);
             if(n.toString().equals(currentNotification)) {
                 foundCurrentNotification = true;
@@ -488,7 +488,7 @@ public class Peek implements SensorActivityHandler.SensorChangedCallback {
         if(!foundCurrentNotification) {
             if (notificationCount > 0) {
                 updateSelection(mStatusBar
-                        .getNotification().get(notificationCount - 1).notification);
+                        .getNotifications().get(notificationCount - 1).notification);
             } else {
                 dismissNotification();
             }
@@ -542,7 +542,7 @@ public class Peek implements SensorActivityHandler.SensorChangedCallback {
         for(int i = 0; i < mStatusBar.getNotificationCount(); i++) {
             if(NotificationHelper.getContentDescription(n).equals(
                     NotificationHelper.getContentDescription(mStatusBar
-                            .getNotification().get(i).notification))) {
+                            .getNotifications().get(i).notification))) {
                 return true;
             }
         }
