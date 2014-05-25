@@ -89,7 +89,10 @@ import com.android.systemui.recent.RecentsActivity;
 import com.android.systemui.recent.TaskDescription;
 import com.android.systemui.SearchPanelView;
 import com.android.systemui.SystemUI;
-import com.android.systemui.statusbar.notification.NotificationPeek;
+import com.android.systemui.statusbar.notification.Peek;
+import com.android.systemui.statusbar.notification.NotificationHelper;
+import com.android.systemui.statusbar.notification.SensorActivityHandler;
+import com.android.systemui.statusbar.notification.PeekLayout;
 import com.android.systemui.statusbar.phone.Ticker;
 import com.android.systemui.statusbar.phone.KeyguardTouchDelegate;
 import com.android.systemui.statusbar.phone.PhoneStatusBar;
@@ -192,6 +195,10 @@ public abstract class BaseStatusBar extends SystemUI implements
 
     public boolean isDeviceProvisioned() {
         return mDeviceProvisioned;
+    }
+
+    public int getNotificationCount() {
+        return mNotificationData.size();
     }
 
     public NotificationData getNotifications() {
@@ -854,6 +861,7 @@ public abstract class BaseStatusBar extends SystemUI implements
         private KeyguardTouchDelegate mKeyguard;
         private PendingIntent mPendingIntent;
         private Intent mIntent;
+        private Intent mIntents;
         private String mPkg;
         private String mTag;
         private int mId;
@@ -861,7 +869,7 @@ public abstract class BaseStatusBar extends SystemUI implements
 
         public NotificationClicker(PendingIntent intent, String pkg, String tag, int id) {
             this();
-            mIntent = intent;
+            mPendingIntent = intent;
             mPkg = pkg;
             mTag = tag;
             mId = id;
