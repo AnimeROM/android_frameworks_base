@@ -1587,7 +1587,6 @@ private:
     struct bag_set;
 
     status_t add(const void* data, size_t size, void* cookie,
-                
                  Asset* asset, bool copyData, const Asset* idmap, const uint32_t pkgIdOverride);
 
     ssize_t getResourcePackageIndex(uint32_t resID) const;

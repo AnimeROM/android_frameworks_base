@@ -177,7 +177,7 @@ AssetManager::AssetManager(CacheMode cacheMode)
     : mLocale(NULL), mVendor(NULL),
       mResources(NULL), mConfig(new ResTable_config),
       mCacheMode(cacheMode), mCacheValid(false),
-      mBasePackageIndex(-1))
+      mBasePackageIndex(-1)
 {
     int count = android_atomic_inc(&gCount)+1;
     //ALOGI("Creating AssetManager %p #%d\n", this, count);
@@ -535,7 +535,7 @@ bool AssetManager::createIdmap(const char* targetApkPath, const char* overlayApk
     }
 
 return tables[0].createIdmap(tables[1], targetCrc, overlayCrc, targetMtime, overlayMtime,
-            targetApkPath, overlayApkPath, targets, overlays, (void**)outData, outSize) == NO
+            targetApkPath, overlayApkPath, targets, overlays, (void**)outData, outSize) == NO_ERROR;
 }
 
 bool AssetManager::addDefaultAssets()
