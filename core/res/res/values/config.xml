@@ -1378,7 +1378,7 @@
          service state to display signal strength bars -->
     <bool name="config_combined_signal">true</bool>
     <bool name="config_hasRotationLockSwitch">false</bool>
-     </string-array>
+     
 
     <!-- Maximum wallpaper width for devices with very high-res screen (1920x1200)
          the wallpaper width suggestion by the launcher may be too large for
