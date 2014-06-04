@@ -25,14 +25,21 @@ import android.app.ActivityManagerNative;
 import android.app.StatusBarManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Configuration;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.ContentObserver;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
@@ -352,6 +359,57 @@ public class NavigationBarView extends LinearLayout {
 
     protected void updateResources() {
         getIcons(mContext.getResources());
+    }
+
+    public void updateResources() {
+        getIcons(mContext.getResources());
+        for (int i = 0; i < mRotatedViews.length; i++) {
+
+            ViewGroup container = (ViewGroup) mRotatedViews[i];
+            if (container != null) {
+                updateKeyButtonViewResources(container);
+                updateLightsOutResources(container);
+            }
+        }
+    }
+
+    private void updateKeyButtonViewResources(ViewGroup container) {
+        ViewGroup navButtons = (ViewGroup) container.findViewById(R.id.nav_buttons);
+        if (navButtons != null) {
+            final int nChildren = navButtons.getChildCount();
+            for (int i = 0; i < nChildren; i++) {
+                final View child = navButtons.getChildAt(i);
+                if (child instanceof KeyButtonView) {
+                    ((KeyButtonView) child).updateResources();
+                }
+            }
+        }
+        KeyButtonView kbv = (KeyButtonView) findViewById(R.id.search_light);
+        if (kbv != null) {
+            kbv.updateResources();
+        }
+        kbv = (KeyButtonView) findViewById(R.id.camera_button);
+        if (kbv != null) {
+            kbv.updateResources();
+        }
+    }
+
+    private void updateLightsOutResources(ViewGroup container) {
+        ViewGroup lightsOut = (ViewGroup) container.findViewById(R.id.lights_out);
+        if (lightsOut != null) {
+            final int nChildren = lightsOut.getChildCount();
+            for (int i = 0; i < nChildren; i++) {
+                final View child = lightsOut.getChildAt(i);
+                if (child instanceof ImageView) {
+                    final ImageView iv = (ImageView) child;
+                    // clear out the existing drawable, this is required since the
+                    // ImageView keeps track of the resource ID and if it is the same
+                    // it will not update the drawable.
+                    iv.setImageDrawable(null);
+                    iv.setImageResource(R.drawable.ic_sysbar_lights_out_dot_large);
+                }
+            }
+        }
     }
 
     @Override
@@ -756,4 +814,17 @@ public class NavigationBarView extends LinearLayout {
         pw.println();
     }
 
+    private static Bundle getApplicationMetadata(Context context, String pkg) {
+        if (pkg != null) {
+            try {
+                ApplicationInfo ai = context.getPackageManager().
+                    getApplicationInfo(pkg, PackageManager.GET_META_DATA);
+                return ai.metaData;
+            } catch (NameNotFoundException e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
 }

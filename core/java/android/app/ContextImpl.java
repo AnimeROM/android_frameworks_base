@@ -1,5 +1,7 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
+ * This code has been modified.  Portions copyright (C) 2010, T-Mobile USA, Inc
+ * Copyright (C) 2014 The XPeriece Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +17,12 @@
  */
 
 package android.app;
+
+import android.content.res.CustomTheme;
+import android.content.res.IThemeService;
+import android.content.res.ThemeManager;
+import android.accounts.AccountManager;
+import android.accounts.IAccountManager;
 
 import android.os.Build;
 import com.android.internal.policy.PolicyManager;
@@ -587,6 +595,14 @@ class ContextImpl extends Context {
             public Object createService(ContextImpl ctx) {
                 return new ConsumerIrManager(ctx);
             }});
+
+        registerService(THEME_SERVICE, new ServiceFetcher() {
+            public Object createService(ContextImpl ctx) {
+                IBinder b = ServiceManager.getService(THEME_SERVICE);
+                IThemeService service = IThemeService.Stub.asInterface(b);
+                return new ThemeManager(ctx.getOuterContext(),
+                        service);
+            }});
     }
 
     static ContextImpl getImpl(Context context) {
@@ -611,6 +627,20 @@ class ContextImpl extends Context {
     @Override
     public Resources getResources() {
         return mResources;
+    }
+
+    /**
+     * Refresh resources object which may have been changed by a theme
+     * configuration change.
+     */
+    /* package */ void refreshResourcesIfNecessary() {
+        if (mResources == Resources.getSystem()) {
+            return;
+        }
+
+        if (mPackageInfo.getCompatibilityInfo().isThemeable) {
+            mTheme = null;
+        }
     }
 
     @Override
@@ -1911,8 +1941,8 @@ class ContextImpl extends Context {
         ContextImpl c = new ContextImpl();
         c.init(mPackageInfo, null, mMainThread);
         c.mResources = mResourcesManager.getTopLevelResources(mPackageInfo.getResDir(),
-                getDisplayId(), overrideConfiguration, mResources.getCompatibilityInfo(),
-                mActivityToken);
+                mPackageInfo.getOverlayDirs(), getDisplayId(), mPackageInfo.getAppDir(), overrideConfiguration,
+                mResources.getCompatibilityInfo(), mActivityToken, c);
         return c;
     }
 
@@ -1929,7 +1959,7 @@ class ContextImpl extends Context {
         context.mDisplay = display;
         DisplayAdjustments daj = getDisplayAdjustments(displayId);
         context.mResources = mResourcesManager.getTopLevelResources(mPackageInfo.getResDir(),
-                displayId, null, daj.getCompatibilityInfo(), null);
+               mPackageInfo.getOverlayDirs(), displayId, mPackageInfo.getAppDir(), null, daj.getCompatibilityInfo(), null, context);
         return context;
     }
 
@@ -2041,7 +2071,8 @@ class ContextImpl extends Context {
             mDisplayAdjustments.setCompatibilityInfo(compatInfo);
             mDisplayAdjustments.setActivityToken(activityToken);
             mResources = mResourcesManager.getTopLevelResources(mPackageInfo.getResDir(),
-                    Display.DEFAULT_DISPLAY, null, compatInfo, activityToken);
+                     mPackageInfo.getOverlayDirs(), Display.DEFAULT_DISPLAY, mPackageInfo.getAppDir(), null, compatInfo,
+                     activityToken, this);
         } else {
             mDisplayAdjustments.setCompatibilityInfo(packageInfo.getCompatibilityInfo());
             mDisplayAdjustments.setActivityToken(activityToken);
