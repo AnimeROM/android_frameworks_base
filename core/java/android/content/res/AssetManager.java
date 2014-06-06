@@ -266,14 +266,7 @@ public final class AssetManager {
         }
     }
 
-    /*package*/ final void recreateStringBlocks() {	
-
-			synchronized (this) {	
-		makeStringBlocks(true);	
-		}	
-	}	
-			
-    /*package*/ final void recreateStringBlocks() {
+      /*package*/ final void recreateStringBlocks() {
         synchronized (this) {
             makeStringBlocks(true);
         }

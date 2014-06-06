@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
+ * This code has been modified.  Portions copyright (C) 2010, T-Mobile USA, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +17,6 @@
 
 package android.content.pm;
 
-/*THEMES*/
-import android.text.TextUtils;
-import java.io.FileNotFoundException;
-import java.util.Arrays;
-import java.util.zip.ZipFile;
-
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -34,6 +29,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PatternMatcher;
 import android.os.UserHandle;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Base64;
 import android.util.DisplayMetrics;
@@ -43,6 +39,7 @@ import android.util.TypedValue;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -66,6 +63,7 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import com.android.internal.util.XmlUtils;
 
@@ -84,12 +82,13 @@ public class PackageParser {
 
     /** File name in an APK for the Android manifest. */
     private static final String ANDROID_MANIFEST_FILENAME = "AndroidManifest.xml";
-
-   /** Path to overlay directory in a theme APK */
+    /** Path to overlay directory in a theme APK */
     private static final String OVERLAY_PATH = "assets/overlays/";
     /** Path to icon directory in a theme APK */
     private static final String ICON_PATH = "assets/icons/";
+
     private static final String PACKAGE_REDIRECTIONS_XML = "res/xml/redirections.xml";
+
     private static final String TAG_PACKAGE_REDIRECTIONS = "package-redirections";
     private static final String TAG_RESOURCE_REDIRECTIONS = "resource-redirections";
     private static final String TAG_ITEM = "item";
@@ -225,14 +224,14 @@ public class PackageParser {
         public final int versionCode;
         public final int installLocation;
         public final VerifierInfo[] verifiers;
-	public final boolean isTheme;
+        public final boolean isTheme;
 
         public PackageLite(String packageName, int versionCode,
                 int installLocation, List<VerifierInfo> verifiers, boolean isTheme) {
             this.packageName = packageName;
             this.versionCode = versionCode;
             this.installLocation = installLocation;
-	    this.isTheme = isTheme;
+            this.isTheme = isTheme;
             this.verifiers = verifiers.toArray(new VerifierInfo[verifiers.size()]);
         }
     }
@@ -350,7 +349,7 @@ public class PackageParser {
         }
         pi.restrictedAccountType = p.mRestrictedAccountType;
         pi.requiredAccountType = p.mRequiredAccountType;
-	pi.overlayTarget = p.mOverlayTarget;
+        pi.overlayTarget = p.mOverlayTarget;
         pi.firstInstallTime = firstInstallTime;
         pi.lastUpdateTime = lastUpdateTime;
         if ((flags&PackageManager.GET_GIDS) != 0) {
@@ -633,7 +632,7 @@ public class PackageParser {
         // If the pkg is a theme, we need to know what themes it overlays
         // and determine if it has an icon pack
         if (pkg.mIsThemeApk) {
-           //Determine existance of Overlays
+            //Determine existance of Overlays
             ArrayList<String> overlayTargets = scanPackageOverlays(sourceFile);
             for(String overlay : overlayTargets) {
                 pkg.mOverlayTargets.add(overlay);
@@ -650,38 +649,28 @@ public class PackageParser {
             }
         }
 
-        //Is this pkg a theme?
-        if (metaDataBundle.containsKey(ThemeInfo.META_TAG_NAME)) {
-            pkg.mIsThemeApk = true;
-            pkg.mTrustedOverlay = true;
-            pkg.mOverlayPriority = 1;
-            pkg.mThemeInfos.add(new ThemeInfo(metaDataBundle));
-        }
-
-        // Is this pkg a legacy theme
-        if (pkg.mIsLegacyThemeApk) {
-            pkg.mIsThemeApk = true;
-            pkg.mTrustedOverlay = true;
-            pkg.mOverlayPriority = 1;
-        }
-
         return pkg;
     }
+
 
     private ArrayList<String> scanPackageOverlays(File originalFile) {
         Set<String> overlayTargets = new HashSet<String>();
 
         try {
             final ZipFile privateZip = new ZipFile(originalFile.getPath());
-            final Enumeration<? extends ZipEntry> privateZipEntries = privateZip.entries();
-            while (privateZipEntries.hasMoreElements()) {
-                final ZipEntry zipEntry = privateZipEntries.nextElement();
-                final String zipEntryName = zipEntry.getName();
+            try {
+                final Enumeration<? extends ZipEntry> privateZipEntries = privateZip.entries();
+                while (privateZipEntries.hasMoreElements()) {
+                    final ZipEntry zipEntry = privateZipEntries.nextElement();
+                    final String zipEntryName = zipEntry.getName();
 
-                if (zipEntryName.startsWith(OVERLAY_PATH) && zipEntryName.length() > 16) {
-                    String[] subdirs = zipEntryName.split("/");
-                    overlayTargets.add(subdirs[2]);
+                    if (zipEntryName.startsWith(OVERLAY_PATH) && zipEntryName.length() > 16) {
+                        String[] subdirs = zipEntryName.split("/");
+                        overlayTargets.add(subdirs[2]);
+                    }
                 }
+            } finally {
+                privateZip.close();
             }
         } catch(Exception e) {
             e.printStackTrace();
@@ -696,14 +685,19 @@ public class PackageParser {
     private boolean packageHasIconPack(File originalFile) {
         try {
             final ZipFile privateZip = new ZipFile(originalFile.getPath());
-            final Enumeration<? extends ZipEntry> privateZipEntries = privateZip.entries();
-            while (privateZipEntries.hasMoreElements()) {
-                final ZipEntry zipEntry = privateZipEntries.nextElement();
-                final String zipEntryName = zipEntry.getName();
+            try {
+                final Enumeration<? extends ZipEntry> privateZipEntries = privateZip.entries();
+                while (privateZipEntries.hasMoreElements()) {
+                    final ZipEntry zipEntry = privateZipEntries.nextElement();
+                    final String zipEntryName = zipEntry.getName();
 
-                if (zipEntryName.startsWith(ICON_PATH) && zipEntryName.length() > ICON_PATH.length()) {
-                    return true;
+                    if (zipEntryName.startsWith(ICON_PATH)
+                            && zipEntryName.length() > ICON_PATH.length()) {
+                        return true;
+                    }
                 }
+            } finally {
+                privateZip.close();
             }
         } catch(Exception e) {
             Log.e(TAG, "Could not read zip entries while checking if apk has icon pack", e);
@@ -747,7 +741,6 @@ public class PackageParser {
         Map<String, String> redirectionsMap = new HashMap<String, String>();
         try {
             XmlResourceParser parser = am.openXmlResourceParser(PACKAGE_REDIRECTIONS_XML);
-
             int type;
             while ((type=parser.next()) != XmlPullParser.END_DOCUMENT) {
                 switch (type) {
@@ -813,7 +806,6 @@ public class PackageParser {
      * @return True if the asset was successfully processed
      */
     private Map<String, String> getResourceRedirections(String name, String pkg, Resources themeResources, String themePkgName) {
-        AssetManager am = themeResources.getAssets();
         if (!name.startsWith("res/"))
             name = "res/" + name;
         if (!name.endsWith(".xml"))
@@ -1230,6 +1222,7 @@ public class PackageParser {
         int installLocation = PARSE_DEFAULT_INSTALL_LOCATION;
         int versionCode = 0;
         int numFound = 0;
+
         for (int i = 0; i < attrs.getAttributeCount(); i++) {
             String attr = attrs.getAttributeName(i);
             if (attr.equals("installLocation")) {
@@ -1297,7 +1290,7 @@ public class PackageParser {
     }
 
     private Package parsePackage(
-      Resources res, XmlResourceParser parser, int flags, boolean trustedOverlay,
+        Resources res, XmlResourceParser parser, int flags, boolean trustedOverlay,
         String[] outError) throws XmlPullParserException, IOException {
         AttributeSet attrs = parser;
 
@@ -1322,7 +1315,8 @@ public class PackageParser {
         }
 
         final Package pkg = new Package(pkgName);
-	Bundle metaDataBundle = new Bundle();
+        Bundle metaDataBundle = new Bundle();
+
         boolean foundApp = false;
         
         TypedArray sa = res.obtainAttributes(attrs,
@@ -1399,7 +1393,6 @@ public class PackageParser {
                     return null;
                 }
             } else if (tagName.equals("overlay")) {
-
                 pkg.mTrustedOverlay = trustedOverlay;
 
                 sa = res.obtainAttributes(attrs,
@@ -1699,7 +1692,7 @@ public class PackageParser {
                 // Just skip this tag
                 XmlUtils.skipCurrentTag(parser);
                 continue;
-
+                
             } else if (parser.getName().equals("meta-data")) {
                 if ((metaDataBundle=parseMetaData(res, parser, attrs, metaDataBundle,
                         outError)) == null) {
@@ -1707,8 +1700,7 @@ public class PackageParser {
                 }
             } else if (tagName.equals("theme")) {
                 pkg.mIsLegacyThemeApk = true;
-                pkg.mLegacyThemeInfos.add(new LegacyThemeInfo(parser, res, attrs));                
-
+                pkg.mLegacyThemeInfos.add(new LegacyThemeInfo(parser, res, attrs));
             } else if (RIGID_PARSER) {
                 outError[0] = "Bad element under <manifest>: "
                     + parser.getName();
@@ -1799,8 +1791,7 @@ public class PackageParser {
                         >= android.os.Build.VERSION_CODES.DONUT)) {
             pkg.applicationInfo.flags |= ApplicationInfo.FLAG_SUPPORTS_SCREEN_DENSITIES;
         }
-	
-	if (pkg.mIsThemeApk || pkg.mIsLegacyThemeApk) {
+        if (pkg.mIsThemeApk || pkg.mIsLegacyThemeApk) {
             pkg.applicationInfo.isThemeable = false;
         }
 
@@ -1815,6 +1806,20 @@ public class PackageParser {
             }
         }
 
+        //Is this pkg a theme?
+        if (metaDataBundle.containsKey(ThemeInfo.META_TAG_NAME)) {
+            pkg.mIsThemeApk = true;
+            pkg.mTrustedOverlay = true;
+            pkg.mOverlayPriority = 1;
+            pkg.mThemeInfos.add(new ThemeInfo(metaDataBundle));
+        }
+
+        // Is this pkg a legacy theme
+        if (pkg.mIsLegacyThemeApk) {
+            pkg.mIsThemeApk = true;
+            pkg.mTrustedOverlay = true;
+            pkg.mOverlayPriority = 1;
+        }
         return pkg;
     }
 
@@ -2253,9 +2258,8 @@ public class PackageParser {
         final ApplicationInfo ai = owner.applicationInfo;
         final String pkgName = owner.applicationInfo.packageName;
 
-	// assume that this package is themeable unless explicitly set to false.
+        // assume that this package is themeable unless explicitly set to false.
         ai.isThemeable = true;
-
 
         TypedArray sa = res.obtainAttributes(attrs,
                 com.android.internal.R.styleable.AndroidManifestApplication);
@@ -2857,8 +2861,8 @@ public class PackageParser {
                 if (!parseIntent(res, parser, attrs, true, intent, outError)) {
                     return null;
                 }
-	
-	 if package is a legacy icon pack
+
+                // Check if package is a legacy icon pack
                 if (!owner.mIsLegacyIconPackApk) {
                     for(String action : ThemeUtils.sSupportedActions) {
                         if (intent.hasAction(action)) {
@@ -3915,7 +3919,7 @@ public class PackageParser {
         
         // For use by package manager to keep track of where it has done dexopt.
         public boolean mDidDexOpt;
-    
+
         // Is Theme Apk
         public boolean mIsThemeApk = false;
         public final ArrayList<String> mOverlayTargets = new ArrayList<String>(0);
@@ -3931,7 +3935,6 @@ public class PackageParser {
         public final ArrayList<LegacyThemeInfo> mLegacyThemeInfos = new ArrayList<LegacyThemeInfo>(0);
         public final Map<String, String> mLegacyThemePackageRedirections =
                 new HashMap<String, String>();
-
 
         // // User set enabled state.
         // public int mSetEnabled = PackageManager.COMPONENT_ENABLED_STATE_DEFAULT;
@@ -3978,7 +3981,6 @@ public class PackageParser {
         public boolean mTrustedOverlay;
 
         public boolean hasIconPack;
-
 
         /**
          * Data used to feed the KeySetManager
@@ -4588,3 +4590,4 @@ public class PackageParser {
         sCompatibilityModeEnabled = compatibilityModeEnabled;
     }
 }
+

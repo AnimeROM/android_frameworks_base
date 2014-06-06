@@ -2190,15 +2190,6 @@ public final class ActivityThread {
 
         } catch (Exception e) {
             if (!mInstrumentation.onException(activity, e)) {
-                if (e instanceof InflateException) {
-                    Log.e(TAG, "Failed to inflate", e);
-                    String pkg = null;
-                    if (r.packageInfo != null && !TextUtils.isEmpty(r.packageInfo.getPackageName())) {
-                        pkg = r.packageInfo.getPackageName();
-                    }
-                    Intent intent = new Intent(Intent.ACTION_APP_LAUNCH_FAILURE,
-                            (pkg != null)? Uri.fromParts("package", pkg, null) : null);
-                    getSystemContext().sendBroadcast(intent);
                 throw new RuntimeException(
                     "Unable to start activity " + component
                     + ": " + e.toString(), e);
@@ -2208,7 +2199,7 @@ public final class ActivityThread {
         return activity;
     }
 
-    private Context createBaseContextForActivity(ActivityClientRecord r,
+    public Context createBaseContextForActivity(ActivityClientRecord r,
             final Activity activity) {
         ContextImpl appContext = ContextImpl.createActivityContext(this, r.packageInfo, r.token);
         appContext.setOuterContext(activity);
@@ -3899,7 +3890,7 @@ public final class ActivityThread {
             if (DEBUG_CONFIGURATION) Slog.v(TAG, "Handle configuration changed: "
                     + config);
 
-            diff = mResourcesManager.applyConfigurationToResourcesLocked(config, compat);
+            mResourcesManager.applyConfigurationToResourcesLocked(config, compat);
 
             if (mConfiguration == null) {
                 mConfiguration = new Configuration();
@@ -3922,20 +3913,7 @@ public final class ActivityThread {
         if (callbacks != null) {
             final int N = callbacks.size();
             for (int i=0; i<N; i++) {
-                ComponentCallbacks2 cb = callbacks.get(i);
-
-                // We removed the old resources object from the mActiveResources
-                // cache, now we need to trigger an update for each application.
-                if ((diff & ActivityInfo.CONFIG_THEME_RESOURCE) != 0) {
-                    if (cb instanceof ContextWrapper) {
-                        Context context = ((ContextWrapper)cb).getBaseContext();
-                        if (context instanceof ContextImpl) {
-                            ((ContextImpl)context).refreshResourcesIfNecessary();
-                        }
-                    }
-                }
-
-                performConfigurationChanged(cb, config);
+	performConfigurationChanged(callbacks.get(i), config);
             }
         }
     }

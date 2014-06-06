@@ -847,7 +847,7 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         setFocusableInTouchMode(true);
         setWillNotDraw(false);
         setAlwaysDrawnWithCacheEnabled(false);
-        setScrollingCacheEnabled(false);
+        setScrollingCacheEnabled(true);
 
         final ViewConfiguration configuration = ViewConfiguration.get(mContext);
         mTouchSlop = configuration.getScaledTouchSlop();
@@ -2114,16 +2114,13 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         mInLayout = false;
 
         mOverscrollMax = (b - t) / OVERSCROLL_LIMIT_DIVISOR;
-<<<<<<< HEAD
         mHeight = getHeight();
         mWidth = getWidth();
-=======
 
         // TODO: Move somewhere sane. This doesn't belong in onLayout().
         if (mFastScroller != null) {
             mFastScroller.onItemCountChanged(getChildCount(), mItemCount);
         }
->>>>>>> b6003eff8b2945c5b6fd180b2cf2c3662cc112b0
     }
 
     /**
@@ -2271,9 +2268,6 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
             if (params.viewType == mAdapter.getItemViewType(position)) {
                 final View updatedView = mAdapter.getView(position, transientView, this);
 
-            if(mIsScrolling && !mIsWidget) {
-                child = setAnimation(child);
-           }
                 // If we failed to re-bind the data, scrap the obtained view.
                 if (updatedView != transientView) {
                     mRecycler.addScrapView(updatedView, position);
@@ -2286,14 +2280,17 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         }
 
         final View scrapView = mRecycler.getScrapView(position);
-        final View child = mAdapter.getView(position, scrapView, this);
+        View child = mAdapter.getView(position, scrapView, this);
         if (scrapView != null) {
             if (child != scrapView) {
-                // Failed to re-bind the data, return scrap to the heap.
+    if(mIsScrolling && !mIsWidget) {
+		                child = setAnimation(child);
+           }
+                       // Failed to re-bind the data, return scrap to the heap.
                 mRecycler.addScrapView(scrapView, position);
             } else {
                 isScrap[0] = true;
-
+	
                 // Clear any system-managed transient state so that we can
                 // recycle this view and bind it to different data.
                 if (child.isAccessibilityFocused()) {
