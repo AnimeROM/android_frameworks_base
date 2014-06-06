@@ -3576,10 +3576,10 @@ public class PackageManagerService extends IPackageManager.Stub {
 
     private boolean createIdmapForPackagePairLI(PackageParser.Package pkg,
             PackageParser.Package opkg, String redirectionsPath) {
-        if (DEBUG_PACKAGE_SCANNING) Log.d(TAG, "Generating idmaps between "  pkg.packageName + ":" + opkg.packageName);
+        if (DEBUG_PACKAGE_SCANNING) Log.d(TAG, "Generating idmaps between " + pkg.packageName + ":" + opkg.packageName);
         if (!opkg.mTrustedOverlay) {
-            Slog.w(TAG, "Skipping target and overlay pair " + pkg.mScanPath  " and " +
-                   opkg.mScanPath + ": overlay not trusted");
+Slog.w(TAG, "Skipping target and overlay pair " + pkg.mScanPath + " and " +
+                    opkg.mScanPath + ": overlay not trusted");
             return false;
         }
        HashMap<String, PackageParser.Package> overlaySet = mOverlays.get(pkg.packageName);
