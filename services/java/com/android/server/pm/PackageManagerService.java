@@ -1347,7 +1347,7 @@ public class PackageManagerService extends IPackageManager.Stub {
         mVendorOverlayInstallObserver = new AppDirObserver(
             vendorOverlayDir.getPath(), OBSERVER_EVENTS, true, false);
         mVendorOverlayInstallObserver.startWatching();
-        scanDir(vendorOverlayDir, PackageParser.PARSE_IS_SYSTEM
+        scanDirLI(vendorOverlayDir, PackageParser.PARSE_IS_SYSTEM
                 | PackageParser.PARSE_IS_SYSTEM_DIR, scanMode | SCAN_TRUSTED_OVERLAY, 0);
 
             // Find base frameworks (resource packages without code).
@@ -9945,8 +9945,8 @@ Slog.w(TAG, "Skipping target and overlay pair " + pkg.mScanPath + " and " +
                 sendPackageBroadcast(Intent.ACTION_PACKAGE_REMOVED, removedPackage, category,
                         extras, null, null, removedUsers);
                 if (fullRemove && !replacing) {
-                    sendPackageBroadcast(Intent.ACTION_PACKAGE_FULLY_REMOVED, removedPackage, category,
-                            extras, null, null, removedUsers);
+                    sendPackageBroadcast(Intent.ACTION_UID_REMOVED, null, null, extras, null, null,
+                        removedUsers);
                 }
             }
             if (removedAppId >= 0) {
@@ -10980,7 +10980,7 @@ Slog.w(TAG, "Skipping target and overlay pair " + pkg.mScanPath + " and " +
         extras.putStringArray(Intent.EXTRA_CHANGED_COMPONENT_NAME_LIST, nameList);
         extras.putBoolean(Intent.EXTRA_DONT_KILL_APP, killFlag);
         extras.putInt(Intent.EXTRA_UID, packageUid);
-        sendPackageBroadcast(Intent.ACTION_PACKAGE_CHANGED,  packageName, null, null, null,
+        sendPackageBroadcast(Intent.ACTION_PACKAGE_CHANGED, packageName, null, extras, null, null,
                 new int[] {UserHandle.getUserId(packageUid)});
     }
 
@@ -11717,8 +11717,8 @@ Slog.w(TAG, "Skipping target and overlay pair " + pkg.mScanPath + " and " +
             }
             String action = mediaStatus ? Intent.ACTION_EXTERNAL_APPLICATIONS_AVAILABLE
                     : Intent.ACTION_EXTERNAL_APPLICATIONS_UNAVAILABLE;
-            sendPackageBroadcast(action, null, null, null, finishedReceiver, null);
-        }
+		sendPackageBroadcast(action, null, null, extras, null, finishedReceiver, null);     
+	   }
     }
 
    /*

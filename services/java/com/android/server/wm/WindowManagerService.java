@@ -850,10 +850,6 @@ public class WindowManagerService extends IWindowManager.Stub
         return mInputMonitor;
     }
 
-    private Context getUiContext() {
-       return mContext;
-   }
-
     @Override
     public boolean onTransact(int code, Parcel data, Parcel reply, int flags)
             throws RemoteException {
