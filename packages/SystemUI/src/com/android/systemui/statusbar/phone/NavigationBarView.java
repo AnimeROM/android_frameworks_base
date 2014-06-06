@@ -357,10 +357,6 @@ public class NavigationBarView extends LinearLayout {
         mRecentLandIcon = res.getDrawable(R.drawable.ic_sysbar_recent_land);
     }
 
-    protected void updateResources() {
-        getIcons(mContext.getResources());
-    }
-
     public void updateResources() {
         getIcons(mContext.getResources());
         for (int i = 0; i < mRotatedViews.length; i++) {
