@@ -9945,12 +9945,12 @@ Slog.w(TAG, "Skipping target and overlay pair " + pkg.mScanPath + " and " +
                 sendPackageBroadcast(Intent.ACTION_PACKAGE_REMOVED, removedPackage, category,
                         extras, null, null, removedUsers);
                 if (fullRemove && !replacing) {
-                    sendPackageBroadcast(Intent.ACTION_UID_REMOVED, null, null, extras, null, null,
-                        removedUsers);
+                    sendPackageBroadcast(Intent.ACTION_PACKAGE_FULLY_REMOVED, removedPackage, category,
+                            extras, null, null, removedUsers);
                 }
             }
             if (removedAppId >= 0) {
-                sendPackageBroadcast(Intent.ACTION_UID_REMOVED, null, null, null, null,
+                sendPackageBroadcast(Intent.ACTION_UID_REMOVED, null, null, extras, null, null,
                         removedUsers);
             }
         }
