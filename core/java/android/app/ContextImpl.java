@@ -1,7 +1,5 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
- * This code has been modified.  Portions copyright (C) 2010, T-Mobile USA, Inc
- * Copyright (C) 2014 The XPeriece Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +15,6 @@
  */
 
 package android.app;
-
-import android.content.res.CustomTheme;
-import android.content.res.IThemeService;
-import android.content.res.ThemeManager;
-import android.accounts.AccountManager;
-import android.accounts.IAccountManager;
 
 import android.os.Build;
 import com.android.internal.policy.PolicyManager;
@@ -603,14 +595,6 @@ class ContextImpl extends Context {
             public Object createService(ContextImpl ctx) {
                 return new ConsumerIrManager(ctx);
             }});
-
-        registerService(THEME_SERVICE, new ServiceFetcher() {
-            public Object createService(ContextImpl ctx) {
-                IBinder b = ServiceManager.getService(THEME_SERVICE);
-                IThemeService service = IThemeService.Stub.asInterface(b);
-                return new ThemeManager(ctx.getOuterContext(),
-                        service);
-            }});
     }
 
     static ContextImpl getImpl(Context context) {
@@ -635,20 +619,6 @@ class ContextImpl extends Context {
     @Override
     public Resources getResources() {
         return mResources;
-    }
-
-    /**
-     * Refresh resources object which may have been changed by a theme
-     * configuration change.
-     */
-    /* package */ void refreshResourcesIfNecessary() {
-        if (mResources == Resources.getSystem()) {
-            return;
-        }
-
-        if (mPackageInfo.getCompatibilityInfo().isThemeable) {
-            mTheme = null;
-        }
     }
 
     @Override
@@ -1943,8 +1913,17 @@ class ContextImpl extends Context {
             throw new IllegalArgumentException("overrideConfiguration must not be null");
         }
 
+<<<<<<< HEAD
         return new ContextImpl(this, mMainThread, mPackageInfo, mActivityToken,
                 mUser, mRestricted, mDisplay, overrideConfiguration);
+=======
+        ContextImpl c = new ContextImpl();
+        c.init(mPackageInfo, null, mMainThread);
+        c.mResources = mResourcesManager.getTopLevelResources(mPackageInfo.getResDir(),
+                getDisplayId(), overrideConfiguration, mResources.getCompatibilityInfo(),
+                mActivityToken);
+        return c;
+>>>>>>> parent of 651c6a8...  Theme Engine [3/8]
     }
 
     @Override
@@ -1956,6 +1935,16 @@ class ContextImpl extends Context {
         return new ContextImpl(this, mMainThread, mPackageInfo, mActivityToken,
                 mUser, mRestricted, display, mOverrideConfiguration);
 
+<<<<<<< HEAD
+=======
+        ContextImpl context = new ContextImpl();
+        context.init(mPackageInfo, null, mMainThread);
+        context.mDisplay = display;
+        DisplayAdjustments daj = getDisplayAdjustments(displayId);
+        context.mResources = mResourcesManager.getTopLevelResources(mPackageInfo.getResDir(),
+                displayId, null, daj.getCompatibilityInfo(), null);
+        return context;
+>>>>>>> parent of 651c6a8...  Theme Engine [3/8]
     }
 
     private int getDisplayId() {
@@ -2079,11 +2068,53 @@ class ContextImpl extends Context {
             } else {
                 mOpPackageName = mBasePackageName;
             }
+<<<<<<< HEAD
        }
    }
     
     void installSystemApplicationInfo(ApplicationInfo info) {
         mPackageInfo.installSystemApplicationInfo(info);
+=======
+        }
+        mResources = mPackageInfo.getResources(mainThread);
+        mResourcesManager = ResourcesManager.getInstance();
+
+        CompatibilityInfo compatInfo =
+                container == null ? null : container.getCompatibilityInfo();
+        if (mResources != null &&
+                ((compatInfo != null && compatInfo.applicationScale !=
+                        mResources.getCompatibilityInfo().applicationScale)
+                || activityToken != null)) {
+            if (DEBUG) {
+                Log.d(TAG, "loaded context has different scaling. Using container's" +
+                        " compatiblity info:" + container.getDisplayMetrics());
+            }
+            if (compatInfo == null) {
+                compatInfo = packageInfo.getCompatibilityInfo();
+            }
+            mDisplayAdjustments.setCompatibilityInfo(compatInfo);
+            mDisplayAdjustments.setActivityToken(activityToken);
+            mResources = mResourcesManager.getTopLevelResources(mPackageInfo.getResDir(),
+                    Display.DEFAULT_DISPLAY, null, compatInfo, activityToken);
+        } else {
+            mDisplayAdjustments.setCompatibilityInfo(packageInfo.getCompatibilityInfo());
+            mDisplayAdjustments.setActivityToken(activityToken);
+        }
+        mMainThread = mainThread;
+        mActivityToken = activityToken;
+        mContentResolver = new ApplicationContentResolver(this, mainThread, user);
+        mUser = user;
+    }
+
+    final void init(Resources resources, ActivityThread mainThread, UserHandle user) {
+        mPackageInfo = null;
+        mBasePackageName = null;
+        mOpPackageName = null;
+        mResources = resources;
+        mMainThread = mainThread;
+        mContentResolver = new ApplicationContentResolver(this, mainThread, user);
+        mUser = user;
+>>>>>>> parent of 651c6a8...  Theme Engine [3/8]
     }
 
     final void scheduleFinalCleanup(String who, String what) {

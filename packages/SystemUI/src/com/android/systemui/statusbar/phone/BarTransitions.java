@@ -43,7 +43,6 @@ public class BarTransitions {
     public static final int MODE_SEMI_TRANSPARENT = 1;
     public static final int MODE_TRANSLUCENT = 2;
     public static final int MODE_LIGHTS_OUT = 3;
-    public static final int MODE_TRANSPARENT = 4;
 
     public static final int LIGHTS_IN_DURATION = 250;
     public static final int LIGHTS_OUT_DURATION = 750;
@@ -98,8 +97,6 @@ public class BarTransitions {
         if (mode == MODE_SEMI_TRANSPARENT) return "MODE_SEMI_TRANSPARENT";
         if (mode == MODE_TRANSLUCENT) return "MODE_TRANSLUCENT";
         if (mode == MODE_LIGHTS_OUT) return "MODE_LIGHTS_OUT";
-	if (mode == MODE_TRANSPARENT) return "MODE_TRANSPARENT";
-        if (DEBUG && mode == -1) return "-1";
         throw new IllegalArgumentException("Unknown mode " + mode);
     }
 
@@ -108,10 +105,6 @@ public class BarTransitions {
     }
 
     public void setContentVisible(boolean visible) {
-        // for subclasses
-    }
-
-    public void applyTransparent(boolean sticky) {
         // for subclasses
     }
 
@@ -194,8 +187,6 @@ public class BarTransitions {
                 targetGradientAlpha = 0xff;
             } else if (mMode == MODE_SEMI_TRANSPARENT) {
                 targetColor = mSemiTransparent;
-	    } else if (mMode == MODE_TRANSPARENT) {
-                targetGradientAlpha = 0;
             } else {
                 targetColor = mOpaque;
             }

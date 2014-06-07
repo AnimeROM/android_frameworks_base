@@ -17,11 +17,6 @@
 
 package com.android.server.am;
 
-import android.content.pm.ThemeUtils;
-import android.content.res.CustomTheme;
-import android.graphics.Typeface;
-import dalvik.system.Zygote;
-
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static com.android.internal.util.XmlUtils.readIntAttribute;
 import static com.android.internal.util.XmlUtils.readLongAttribute;
@@ -331,8 +326,6 @@ public final class ActivityManagerService extends ActivityManagerNative
 
     // How many bytes to write into the dropbox log before truncating
     static final int DROPBOX_MAX_SIZE = 256 * 1024;
-
-    static final String PROP_REFRESH_THEME = "sys.refresh_theme";
 
     /** Run all ActivityStacks through this */
     ActivityStackSupervisor mStackSupervisor;
@@ -818,7 +811,6 @@ public final class ActivityManagerService extends ActivityManagerNative
     boolean mLaunchWarningShown = false;
 
     Context mContext;
-    Context mUiContext;
 
     int mFactoryTest;
 
@@ -1115,7 +1107,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         return;
                     }
                     if (mShowDialogs && !mSleeping && !mShuttingDown) {
-                        Dialog d = new AppErrorDialog(getUiContext(),
+                        Dialog d = new AppErrorDialog(mContext,
                                 ActivityManagerService.this, res, proc);
                         d.show();
                         proc.crashDialog = d;
@@ -1150,7 +1142,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
                     if (mShowDialogs) {
                         Dialog d = new AppNotRespondingDialog(ActivityManagerService.this,
-                                getUiContext(), proc, (ActivityRecord)data.get("activity"),
+                                mContext, proc, (ActivityRecord)data.get("activity"),
                                 msg.arg1 != 0);
                         d.show();
                         proc.anrDialog = d;
@@ -1176,7 +1168,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     }
                     AppErrorResult res = (AppErrorResult) data.get("result");
                     if (mShowDialogs && !mSleeping && !mShuttingDown) {
-                        Dialog d = new StrictModeViolationDialog(getUiContext(),
+                        Dialog d = new StrictModeViolationDialog(mContext,
                                 ActivityManagerService.this, res, proc);
                         d.show();
                         proc.crashDialog = d;
@@ -1190,7 +1182,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             } break;
             case SHOW_FACTORY_ERROR_MSG: {
                 Dialog d = new FactoryErrorDialog(
-                    getUiContext(), msg.getData().getCharSequence("msg"));
+                    mContext, msg.getData().getCharSequence("msg"));
                 d.show();
                 ensureBootCompleted();
             } break;
@@ -1210,7 +1202,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                         if (!app.waitedForDebugger) {
                             Dialog d = new AppWaitingForDebuggerDialog(
                                     ActivityManagerService.this,
-                                    getUiContext(), app);
+                                    mContext, app);
                             app.waitDialog = d;
                             app.waitedForDebugger = true;
                             d.show();
@@ -1294,7 +1286,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 Log.e(TAG, title + ": " + text);
                 if (mShowDialogs) {
                     // XXX This is a temporary dialog, no need to localize.
-                    AlertDialog d = new BaseErrorDialog(getUiContext());
+                    AlertDialog d = new BaseErrorDialog(mContext);
                     d.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ERROR);
                     d.setCancelable(false);
                     d.setTitle(title);
@@ -1367,7 +1359,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                     notification.defaults = 0; // please be quiet
                     notification.sound = null;
                     notification.vibrate = null;
-                    notification.setLatestEventInfo(getUiContext(), text,
+                    notification.setLatestEventInfo(context, text,
                             mContext.getText(R.string.heavy_weight_notification_detail),
                             PendingIntent.getActivityAsUser(mContext, 0, root.intent,
                                     PendingIntent.FLAG_CANCEL_CURRENT, null,
@@ -2214,15 +2206,6 @@ public final class ActivityManagerService extends ActivityManagerNative
         }
     }
 
-    private Context getUiContext() {
-        synchronized (this) {
-            if (mUiContext == null && mBooted) {
-                mUiContext = ThemeUtils.createUiContext(mContext);
-            }
-            return mUiContext != null ? mUiContext : mContext;
-        }
-    }
-
     /**
      * Initialize the application bind args. These are passed to each
      * process when the bindApplication() IPC is sent to the process. They're
@@ -2782,18 +2765,11 @@ public final class ActivityManagerService extends ActivityManagerNative
                 debugFlags |= Zygote.DEBUG_ENABLE_ASSERT;
             }
 
-            //Check if zygote should refresh its fonts
-            boolean refreshTheme = false;
-            if (SystemProperties.getBoolean(PROP_REFRESH_THEME, false)) {
-                SystemProperties.set(PROP_REFRESH_THEME, "false");
-                refreshTheme = true;
-            }
-
             // Start the process.  It will either succeed and return a result containing
             // the PID of the new process, or else throw a RuntimeException.
             Process.ProcessStartResult startResult = Process.start("android.app.ActivityThread",
                     app.processName, uid, uid, gids, debugFlags, mountExternal,
-                    app.info.targetSdkVersion, app.info.seinfo, refreshTheme, null);
+                    app.info.targetSdkVersion, app.info.seinfo, null);
 
             BatteryStatsImpl bs = mBatteryStatsService.getActiveStatistics();
             synchronized (bs) {
@@ -4149,7 +4125,7 @@ public final class ActivityManagerService extends ActivityManagerNative
                 @Override
                 public void run() {
                     synchronized (ActivityManagerService.this) {
-                        final Dialog d = new LaunchWarningWindow(getUiContext(), cur, next);
+                        final Dialog d = new LaunchWarningWindow(mContext, cur, next);
                         d.show();
                         mHandler.postDelayed(new Runnable() {
                             @Override
@@ -5168,13 +5144,6 @@ public final class ActivityManagerService extends ActivityManagerNative
             }
         }, pkgFilter);
 
-        ThemeUtils.registerThemeChangeReceiver(mContext, new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                mUiContext = null;
-            }
-        });
-        
         synchronized (this) {
             // Ensure that any processes we had put on hold are now started
             // up.
@@ -14046,9 +14015,6 @@ public final class ActivityManagerService extends ActivityManagerNative
         Configuration ci;
         synchronized(this) {
             ci = new Configuration(mConfiguration);
-	    if (ci.customTheme == null) {
-                ci.customTheme = CustomTheme.getBootTheme(mContext.getContentResolver());
-            }
         }
         return ci;
     }
@@ -14121,11 +14087,6 @@ public final class ActivityManagerService extends ActivityManagerNative
                     saveLocaleLocked(values.locale,
                                      !values.locale.equals(mConfiguration.locale),
                                      values.userSetLocale);
-                }
-
-              if (values.customTheme != null) {
-                    saveThemeResourceLocked(values.customTheme,
-                           !values.customTheme.equals(mConfiguration.customTheme));
                 }
 
                 mConfigurationSeq++;
@@ -14275,15 +14236,6 @@ public final class ActivityManagerService extends ActivityManagerNative
             return null;
         }
         return srec.launchedFromPackage;
-    }
-
-    private void saveThemeResourceLocked(CustomTheme t, boolean isDiff){
-        if(isDiff) {
-            Settings.Secure.putString(mContext.getContentResolver(), Configuration.THEME_PACKAGE_NAME_PERSISTENCE_PROPERTY, t.getThemePackageName());
-            Settings.Secure.putString(mContext.getContentResolver(), Configuration.THEME_SYSTEMUI_PACKAGE_NAME_PERSISTENCE_PROPERTY, t.getSystemUiPackageName());
-            Settings.Secure.putString(mContext.getContentResolver(), Configuration.THEME_ICONPACK_PACKAGE_NAME_PERSISTENCE_PROPERTY, t.getIconPackPkgName());
-            Settings.Secure.putString(mContext.getContentResolver(), Configuration.THEME_FONT_PACKAGE_NAME_PERSISTENCE_PROPERTY, t.getFontPackPkgName());
-        }
     }
 
     // =========================================================
