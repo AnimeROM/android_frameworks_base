@@ -562,7 +562,7 @@ public class WallpaperCropActivity extends Activity {
                 Log.w(LOGTAG, "cannot read original file, no input URI, resource ID, or " +
                         "image byte array given");
             } else {
-	Utils.closeSilently(mInStream)
+	Utils.closeSilently(mInStream);
                 try {
                     if (mInUri != null) {
                         mInStream = new BufferedInputStream(
