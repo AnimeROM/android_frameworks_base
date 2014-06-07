@@ -103,9 +103,6 @@ public final class Typeface_Delegate {
         if (familyName == null) {
             familyName = DEFAULT_FAMILY;
         }
-        if (style < 0) {
-            style = Typeface.NORMAL;
-        }
 
         Typeface_Delegate newDelegate = new Typeface_Delegate(familyName, style);
         if (sFontLoader != null) {

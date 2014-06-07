@@ -847,7 +847,7 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         setFocusableInTouchMode(true);
         setWillNotDraw(false);
         setAlwaysDrawnWithCacheEnabled(false);
-        setScrollingCacheEnabled(true);
+        setScrollingCacheEnabled(false);
 
         final ViewConfiguration configuration = ViewConfiguration.get(mContext);
         mTouchSlop = configuration.getScaledTouchSlop();
@@ -2102,12 +2102,16 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
         mInLayout = true;
-        final int childCount = getChildCount();
         if (changed) {
+            int childCount = getChildCount();
             for (int i = 0; i < childCount; i++) {
                 getChildAt(i).forceLayout();
             }
             mRecycler.markChildrenDirty();
+        }
+
+        if (mFastScroller != null && (mItemCount != mOldItemCount || mDataChanged)) {
+            mFastScroller.onItemCountChanged(mItemCount);
         }
 
         layoutChildren();
@@ -2116,11 +2120,6 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         mOverscrollMax = (b - t) / OVERSCROLL_LIMIT_DIVISOR;
         mHeight = getHeight();
         mWidth = getWidth();
-
-        // TODO: Move somewhere sane. This doesn't belong in onLayout().
-        if (mFastScroller != null) {
-            mFastScroller.onItemCountChanged(getChildCount(), mItemCount);
-        }
     }
 
     /**
@@ -2257,40 +2256,33 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         Trace.traceBegin(Trace.TRACE_TAG_VIEW, "obtainView");
 
         isScrap[0] = false;
+        View scrapView;
 
-        // Check whether we have a transient state view. Attempt to re-bind the
-        // data and discard the view if we fail.
-        final View transientView = mRecycler.getTransientStateView(position);
-        if (transientView != null) {
-            final LayoutParams params = (LayoutParams) transientView.getLayoutParams();
-
-            // If the view type hasn't changed, attempt to re-bind the data.
-            if (params.viewType == mAdapter.getItemViewType(position)) {
-                final View updatedView = mAdapter.getView(position, transientView, this);
-
-                // If we failed to re-bind the data, scrap the obtained view.
-                if (updatedView != transientView) {
-                    mRecycler.addScrapView(updatedView, position);
-                }
-            }
-
-            // Scrap view implies temporary detachment.
-            isScrap[0] = true;
-            return transientView;
+        scrapView = mRecycler.getTransientStateView(position);
+        if (scrapView == null) {
+            scrapView = mRecycler.getScrapView(position);
         }
 
-        final View scrapView = mRecycler.getScrapView(position);
-        View child = mAdapter.getView(position, scrapView, this);
+        View child;
         if (scrapView != null) {
+            child = mAdapter.getView(position, scrapView, this);
+
+            if(mIsScrolling && !mIsWidget) {
+                child = setAnimation(child);
+            }
+
+            if (child.getImportantForAccessibility() == IMPORTANT_FOR_ACCESSIBILITY_AUTO) {
+                child.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+            }
+
             if (child != scrapView) {
-    if(mIsScrolling && !mIsWidget) {
-		                child = setAnimation(child);
-           }
-                       // Failed to re-bind the data, return scrap to the heap.
                 mRecycler.addScrapView(scrapView, position);
+                if (mCacheColorHint != 0) {
+                    child.setDrawingCacheBackgroundColor(mCacheColorHint);
+                }
             } else {
                 isScrap[0] = true;
-	
+
                 // Clear any system-managed transient state so that we can
                 // recycle this view and bind it to different data.
                 if (child.isAccessibilityFocused()) {
@@ -2299,14 +2291,16 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
 
                 child.dispatchFinishTemporaryDetach();
             }
-        }
+        } else {
+            child = mAdapter.getView(position, null, this);
 
-        if (mCacheColorHint != 0) {
-            child.setDrawingCacheBackgroundColor(mCacheColorHint);
-        }
+            if (child.getImportantForAccessibility() == IMPORTANT_FOR_ACCESSIBILITY_AUTO) {
+                child.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+            }
 
-        if (child.getImportantForAccessibility() == IMPORTANT_FOR_ACCESSIBILITY_AUTO) {
-            child.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+            if (mCacheColorHint != 0) {
+                child.setDrawingCacheBackgroundColor(mCacheColorHint);
+            }
         }
 
         if (mAdapterHasStableIds) {
@@ -6723,8 +6717,12 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
                     }
                 }
             }
-
-            clearTransientStateViews();
+            if (mTransientStateViews != null) {
+                mTransientStateViews.clear();
+            }
+            if (mTransientStateViewsById != null) {
+                mTransientStateViewsById.clear();
+            }
         }
 
         /**
@@ -6791,26 +6789,14 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         }
 
         /**
-         * Dumps and fully detaches any currently saved views with transient
-         * state.
+         * Dump any currently saved views with transient state.
          */
         void clearTransientStateViews() {
-            final SparseArray<View> viewsByPos = mTransientStateViews;
-            if (viewsByPos != null) {
-                final int N = viewsByPos.size();
-                for (int i = 0; i < N; i++) {
-                    removeDetachedView(viewsByPos.valueAt(i), false);
-                }
-                viewsByPos.clear();
+            if (mTransientStateViews != null) {
+                mTransientStateViews.clear();
             }
-
-            final LongSparseArray<View> viewsById = mTransientStateViewsById;
-            if (viewsById != null) {
-                final int N = viewsById.size();
-                for (int i = 0; i < N; i++) {
-                    removeDetachedView(viewsById.valueAt(i), false);
-                }
-                viewsById.clear();
+            if (mTransientStateViewsById != null) {
+                mTransientStateViewsById.clear();
             }
         }
 
@@ -6935,48 +6921,44 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
                 if (victim != null) {
                     final AbsListView.LayoutParams lp
                             = (AbsListView.LayoutParams) victim.getLayoutParams();
-                    final int whichScrap = lp.viewType;
+                    int whichScrap = lp.viewType;
 
                     activeViews[i] = null;
 
-                    if (victim.hasTransientState()) {
-                        // Store views with transient state for later use.
-                        victim.dispatchStartTemporaryDetach();
-
-                        if (mAdapter != null && mAdapterHasStableIds) {
-                            if (mTransientStateViewsById == null) {
-                                mTransientStateViewsById = new LongSparseArray<View>();
-                            }
-                            long id = mAdapter.getItemId(mFirstActivePosition + i);
-                            mTransientStateViewsById.put(id, victim);
-                        } else if (!mDataChanged) {
-                            if (mTransientStateViews == null) {
-                                mTransientStateViews = new SparseArray<View>();
-                            }
-                            mTransientStateViews.put(mFirstActivePosition + i, victim);
-                        } else if (whichScrap != ITEM_VIEW_TYPE_HEADER_OR_FOOTER) {
-                            // The data has changed, we can't keep this view.
+                    final boolean scrapHasTransientState = victim.hasTransientState();
+                    if (!shouldRecycleViewType(whichScrap) || scrapHasTransientState) {
+                        // Do not move views that should be ignored
+                        if (whichScrap != ITEM_VIEW_TYPE_HEADER_OR_FOOTER &&
+                                scrapHasTransientState) {
                             removeDetachedView(victim, false);
                         }
-                    } else if (!shouldRecycleViewType(whichScrap)) {
-                        // Discard non-recyclable views except headers/footers.
-                        if (whichScrap != ITEM_VIEW_TYPE_HEADER_OR_FOOTER) {
-                            removeDetachedView(victim, false);
+                        if (scrapHasTransientState) {
+                            if (mAdapter != null && mAdapterHasStableIds) {
+                                if (mTransientStateViewsById == null) {
+                                    mTransientStateViewsById = new LongSparseArray<View>();
+                                }
+                                long id = mAdapter.getItemId(mFirstActivePosition + i);
+                                mTransientStateViewsById.put(id, victim);
+                            } else {
+                                if (mTransientStateViews == null) {
+                                    mTransientStateViews = new SparseArray<View>();
+                                }
+                                mTransientStateViews.put(mFirstActivePosition + i, victim);
+                            }
                         }
-                    } else {
-                        // Store everything else on the appropriate scrap heap.
-                        if (multipleScraps) {
-                            scrapViews = mScrapViews[whichScrap];
-                        }
+                        continue;
+                    }
 
-                        victim.dispatchStartTemporaryDetach();
-                        lp.scrappedFromPosition = mFirstActivePosition + i;
-                        scrapViews.add(victim);
+                    if (multipleScraps) {
+                        scrapViews = mScrapViews[whichScrap];
+                    }
+                    victim.dispatchStartTemporaryDetach();
+                    lp.scrappedFromPosition = mFirstActivePosition + i;
+                    scrapViews.add(victim);
 
-                        victim.setAccessibilityDelegate(null);
-                        if (hasListener) {
-                            mRecyclerListener.onMovedToScrapHeap(victim);
-                        }
+                    victim.setAccessibilityDelegate(null);
+                    if (hasListener) {
+                        mRecyclerListener.onMovedToScrapHeap(victim);
                     }
                 }
             }
@@ -6985,10 +6967,8 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         }
 
         /**
-         * Makes sure that the size of mScrapViews does not exceed the size of
-         * mActiveViews, which can happen if an adapter does not recycle its
-         * views. Removes cached transient state views that no longer have
-         * transient state.
+         * Makes sure that the size of mScrapViews does not exceed the size of mActiveViews.
+         * (This can happen if an adapter does not recycle its views).
          */
         private void pruneScrapViews() {
             final int maxViews = mActiveViews.length;
@@ -7004,25 +6984,20 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
                 }
             }
 
-            final SparseArray<View> transViewsByPos = mTransientStateViews;
-            if (transViewsByPos != null) {
-                for (int i = 0; i < transViewsByPos.size(); i++) {
-                    final View v = transViewsByPos.valueAt(i);
+            if (mTransientStateViews != null) {
+                for (int i = 0; i < mTransientStateViews.size(); i++) {
+                    final View v = mTransientStateViews.valueAt(i);
                     if (!v.hasTransientState()) {
-                        removeDetachedView(v, false);
-                        transViewsByPos.removeAt(i);
+                        mTransientStateViews.removeAt(i);
                         i--;
                     }
                 }
             }
-
-            final LongSparseArray<View> transViewsById = mTransientStateViewsById;
-            if (transViewsById != null) {
-                for (int i = 0; i < transViewsById.size(); i++) {
-                    final View v = transViewsById.valueAt(i);
+            if (mTransientStateViewsById != null) {
+                for (int i = 0; i < mTransientStateViewsById.size(); i++) {
+                    final View v = mTransientStateViewsById.valueAt(i);
                     if (!v.hasTransientState()) {
-                        removeDetachedView(v, false);
-                        transViewsById.removeAt(i);
+                        mTransientStateViewsById.removeAt(i);
                         i--;
                     }
                 }

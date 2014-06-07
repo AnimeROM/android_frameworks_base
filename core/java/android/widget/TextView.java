@@ -3809,7 +3809,7 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
             }
         }
 
-        if (mLayout != null && mLayoutParams != null) {
+        if (mLayout != null) {
             checkForRelayout();
         }
 
@@ -3903,7 +3903,7 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
     public final void setHint(CharSequence hint) {
         mHint = TextUtils.stringOrSpannedString(hint);
 
-        if (mLayout != null && mLayoutParams != null) {
+        if (mLayout != null) {
             checkForRelayout();
         }
 
@@ -8667,10 +8667,6 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
         super.onRtlPropertiesChanged(layoutDirection);
 
         mTextDir = getTextDirectionHeuristic();
-
-        if (mLayout != null && mLayoutParams != null) {
-            checkForRelayout();
-        }
     }
 
     TextDirectionHeuristic getTextDirectionHeuristic() {

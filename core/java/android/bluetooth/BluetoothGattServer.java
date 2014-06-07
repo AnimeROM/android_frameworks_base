@@ -537,7 +537,7 @@ public final class BluetoothGattServer implements BluetoothProfile {
         try {
             mService.beginServiceDeclaration(mServerIf, service.getType(),
                 service.getInstanceId(), service.getHandles(),
-                new ParcelUuid(service.getUuid()), service.isAdvertisePreferred());
+                new ParcelUuid(service.getUuid()));
 
             List<BluetoothGattService> includedServices = service.getIncludedServices();
             for (BluetoothGattService includedService : includedServices) {

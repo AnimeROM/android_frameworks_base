@@ -304,15 +304,8 @@ final class DisplayPowerState {
 
             int brightness = mScreenOn && mElectronBeamLevel > 0f ? mScreenBrightness : 0;
             if (mPhotonicModulator.setState(mScreenOn, brightness)) {
-                if (DEBUG) {
-                    Slog.d(TAG, "Screen ready");
-                }
                 mScreenReady = true;
                 invokeCleanListenerIfNeeded();
-            } else {
-                if (DEBUG) {
-                    Slog.d(TAG, "Screen not ready");
-                }
             }
         }
     };
@@ -362,7 +355,7 @@ final class DisplayPowerState {
                         AsyncTask.THREAD_POOL_EXECUTOR.execute(mTask);
                     }
                 }
-                return !mChangeInProgress;
+                return mChangeInProgress;
             }
         }
 

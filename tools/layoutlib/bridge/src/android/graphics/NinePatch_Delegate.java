@@ -167,7 +167,6 @@ public final class NinePatch_Delegate {
         return sManager.addNewDelegate(newDelegate);
     }
 
-    @LayoutlibDelegate
     /*package*/ static void nativeFinalize(int chunk) {
         sManager.removeJavaReferenceFor(chunk);
     }
@@ -176,7 +175,7 @@ public final class NinePatch_Delegate {
     /*package*/ static void nativeDraw(int canvas_instance, RectF loc, int bitmap_instance,
             int chunk, int paint_instance_or_null, int destDensity, int srcDensity) {
         draw(canvas_instance,
-                (int) loc.left, (int) loc.top, (int) loc.right, (int) loc.bottom,
+                (int) loc.left, (int) loc.top, (int) loc.width(), (int) loc.height(),
                 bitmap_instance, chunk, paint_instance_or_null,
                 destDensity, srcDensity);
     }
@@ -185,7 +184,7 @@ public final class NinePatch_Delegate {
     /*package*/ static void nativeDraw(int canvas_instance, Rect loc, int bitmap_instance,
             int chunk, int paint_instance_or_null, int destDensity, int srcDensity) {
         draw(canvas_instance,
-                loc.left, loc.top, loc.right, loc.bottom,
+                loc.left, loc.top, loc.width(), loc.height(),
                 bitmap_instance, chunk, paint_instance_or_null,
                 destDensity, srcDensity);
     }

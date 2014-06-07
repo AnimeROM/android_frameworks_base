@@ -94,6 +94,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -269,11 +270,10 @@ public class NotificationManagerService extends INotificationManager.Stub
 
         @Override
         public void binderDied() {
-            // Remove the listener, but don't unbind from the service. The system will bring the
-            // service back up, and the onServiceConnected handler will readd the listener with the
-            // new binding. If this isn't a bound service, and is just a registered
-            // INotificationListener, just removing it from the list is all we need to do anyway.
-            removeListenerImpl(this.listener, this.userid);
+            if (connection == null) {
+                // This is not a service; it won't be recreated. We can give up this connection.
+                unregisterListener(this.listener, this.userid);
+            }
         }
 
         /** convenience method for looking in mEnabledListenersForCurrentUser */
@@ -772,36 +772,26 @@ public class NotificationManagerService extends INotificationManager.Stub
     }
 
     /**
-     * Removes a listener from the list and unbinds from its service.
+     * Remove a listener binder directly
      */
-    public void unregisterListener(final INotificationListener listener, final int userid) {
-        if (listener == null) return;
+    @Override
+    public void unregisterListener(INotificationListener listener, int userid) {
+        // no need to check permissions; if your listener binder is in the list,
+        // that's proof that you had permission to add it in the first place
 
-        NotificationListenerInfo info = removeListenerImpl(listener, userid);
-        if (info != null && info.connection != null) {
-            mContext.unbindService(info.connection);
-        }
-    }
-
-    /**
-     * Removes a listener from the list but does not unbind from the listener's service.
-     *
-     * @return the removed listener.
-     */
-    NotificationListenerInfo removeListenerImpl(
-            final INotificationListener listener, final int userid) {
-        NotificationListenerInfo listenerInfo = null;
         synchronized (mNotificationList) {
             final int N = mListeners.size();
             for (int i=N-1; i>=0; i--) {
                 final NotificationListenerInfo info = mListeners.get(i);
                 if (info.listener.asBinder() == listener.asBinder()
                         && info.userid == userid) {
-                    listenerInfo = mListeners.remove(i);
+                    mListeners.remove(i);
+                    if (info.connection != null) {
+                        mContext.unbindService(info.connection);
+                    }
                 }
             }
         }
-        return listenerInfo;
     }
 
     /**

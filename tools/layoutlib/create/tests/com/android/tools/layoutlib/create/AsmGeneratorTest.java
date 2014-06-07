@@ -33,7 +33,6 @@ import org.objectweb.asm.Type;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -132,8 +131,7 @@ public class AsmGeneratorTest {
                 new String[] {        // include classes
                     "**"
                 },
-                new HashSet<String>(0) /* excluded classes */,
-                new String[]{} /* include files */);
+                new HashSet<String>(0) /* excluded classes */);
         aa.analyze();
         agen.generate();
 
@@ -197,15 +195,10 @@ public class AsmGeneratorTest {
                 new String[] {        // include classes
                     "**"
                 },
-                new HashSet<String>(1),
-                new String[] {        /* include files */
-                    "mock_android/data/data*"
-                });
+                new HashSet<String>(1));
         aa.analyze();
         agen.generate();
-        Map<String, ClassReader> output = new TreeMap<String, ClassReader>();
-        Map<String, InputStream> filesFound = new TreeMap<String, InputStream>();
-        parseZip(mOsDestJar, output, filesFound);
+        Map<String, ClassReader> output = parseZip(mOsDestJar);
         boolean injectedClassFound = false;
         for (ClassReader cr: output.values()) {
             TestClassVisitor cv = new TestClassVisitor();
@@ -213,13 +206,10 @@ public class AsmGeneratorTest {
             injectedClassFound |= cv.mInjectedClassFound;
         }
         assertTrue(injectedClassFound);
-        assertArrayEquals(new String[] {"mock_android/data/dataFile"},
-                filesFound.keySet().toArray());
     }
 
-    private void parseZip(String jarPath,
-            Map<String, ClassReader> classes,
-            Map<String, InputStream> filesFound) throws IOException {
+    private Map<String,ClassReader> parseZip(String jarPath) throws IOException {
+        TreeMap<String, ClassReader> classes = new TreeMap<String, ClassReader>();
 
             ZipFile zip = new ZipFile(jarPath);
             Enumeration<? extends ZipEntry> entries = zip.entries();
@@ -230,11 +220,10 @@ public class AsmGeneratorTest {
                     ClassReader cr = new ClassReader(zip.getInputStream(entry));
                     String className = classReaderToClassName(cr);
                     classes.put(className, cr);
-                } else {
-                    filesFound.put(entry.getName(), zip.getInputStream(entry));
                 }
             }
 
+        return classes;
     }
 
     private String classReaderToClassName(ClassReader classReader) {

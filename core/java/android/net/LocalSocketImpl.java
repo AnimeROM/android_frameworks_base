@@ -326,7 +326,6 @@ class LocalSocketImpl
         }
 
         s.fd = accept(fd, s);
-        s.mFdCreatedInternally = true;
     }
 
     /**
@@ -537,3 +536,4 @@ class LocalSocketImpl
         close();
     }
 }
+

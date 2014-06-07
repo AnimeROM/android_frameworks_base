@@ -85,9 +85,7 @@ static void movie_draw(JNIEnv* env, jobject movie, jobject canvas,
 static jobject movie_decodeAsset(JNIEnv* env, jobject clazz, jint native_asset) {
     android::Asset* asset = reinterpret_cast<android::Asset*>(native_asset);
     if (asset == NULL) return NULL;
-    SkAutoTUnref<SkStreamRewindable> stream (new android::AssetStreamAdaptor(asset,
-            android::AssetStreamAdaptor::kNo_OwnAsset,
-            android::AssetStreamAdaptor::kNo_HasMemoryBase));
+    SkAutoTUnref<SkStreamRewindable> stream (new android::AssetStreamAdaptor(asset));
     SkMovie* moov = SkMovie::DecodeStream(stream.get());
     return create_jmovie(env, moov);
 }

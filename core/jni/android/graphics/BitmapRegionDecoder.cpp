@@ -29,6 +29,7 @@
 #include "CreateJavaOutputStreamAdaptor.h"
 #include "Utils.h"
 #include "JNIHelp.h"
+#include "SkTScopedPtr.h"
 
 #include <android_runtime/AndroidRuntime.h>
 #include "android_util_Binder.h"
@@ -75,7 +76,7 @@ private:
     int fHeight;
 };
 
-static jobject createBitmapRegionDecoder(JNIEnv* env, SkStreamRewindable* stream) {
+static jobject createBitmapRegionDecoder(JNIEnv* env, SkStream* stream) {
     SkImageDecoder* decoder = SkImageDecoder::Factory(stream);
     int width, height;
     if (NULL == decoder) {
@@ -107,7 +108,7 @@ static jobject nativeNewInstanceFromByteArray(JNIEnv* env, jobject, jbyteArray b
         For now we just always copy the array's data if isShareable.
      */
     AutoJavaByteArray ar(env, byteArray);
-    SkStreamRewindable* stream = new SkMemoryStream(ar.ptr() + offset, length, true);
+    SkStream* stream = new SkMemoryStream(ar.ptr() + offset, length, true);
 
     jobject brd = createBitmapRegionDecoder(env, stream);
     SkSafeUnref(stream); // the decoder now holds a reference
@@ -214,7 +215,7 @@ static jobject nativeDecodeRegion(JNIEnv* env, jobject, SkBitmapRegionDecoder *b
     region.fRight = start_x + width;
     region.fBottom = start_y + height;
     SkBitmap* bitmap = NULL;
-    SkAutoTDelete<SkBitmap> adb;
+    SkTScopedPtr<SkBitmap> adb;
 
     if (tileBitmap != NULL) {
         // Re-use bitmap.
@@ -245,7 +246,7 @@ static jobject nativeDecodeRegion(JNIEnv* env, jobject, SkBitmapRegionDecoder *b
     }
 
     // detach bitmap from its autodeleter, since we want to own it now
-    adb.detach();
+    adb.release();
 
     JavaPixelAllocator* allocator = (JavaPixelAllocator*) decoder->getAllocator();
     jbyteArray buff = allocator->getStorageObjAndReset();

@@ -67,7 +67,6 @@ public final class Bitmap implements Parcelable {
      * setPremultiplied() aren't order dependent, despite being setters.
      */
     private boolean mIsPremultiplied;
-
     private byte[] mNinePatchChunk;   // may be null
     private int[] mLayoutBounds;   // may be null
     private int mWidth;
@@ -391,7 +390,7 @@ public final class Bitmap implements Parcelable {
          * No color information is stored.
          * With this configuration, each pixel requires 1 byte of memory.
          */
-        ALPHA_8     (1),
+        ALPHA_8     (2),
 
         /**
          * Each pixel is stored on 2 bytes and only the RGB channels are
@@ -407,7 +406,7 @@ public final class Bitmap implements Parcelable {
          * This configuration may be useful when using opaque bitmaps
          * that do not require high color fidelity.
          */
-        RGB_565     (3),
+        RGB_565     (4),
 
         /**
          * Each pixel is stored on 2 bytes. The three RGB color channels
@@ -429,7 +428,7 @@ public final class Bitmap implements Parcelable {
          *             it is advised to use {@link #ARGB_8888} instead.
          */
         @Deprecated
-        ARGB_4444   (4),
+        ARGB_4444   (5),
 
         /**
          * Each pixel is stored on 4 bytes. Each channel (RGB and alpha
@@ -439,13 +438,13 @@ public final class Bitmap implements Parcelable {
          * This configuration is very flexible and offers the best
          * quality. It should be used whenever possible.
          */
-        ARGB_8888   (5);
+        ARGB_8888   (6);
 
         final int nativeInt;
 
         @SuppressWarnings({"deprecation"})
         private static Config sConfigs[] = {
-            null, ALPHA_8, null, RGB_565, ARGB_4444, ARGB_8888
+            null, null, ALPHA_8, null, RGB_565, ARGB_4444, ARGB_8888
         };
         
         Config(int ni) {
@@ -555,7 +554,7 @@ public final class Bitmap implements Parcelable {
         checkRecycled("Can't copy a recycled bitmap");
         Bitmap b = nativeCopy(mNativeBitmap, config.nativeInt, isMutable);
         if (b != null) {
-            b.setAlphaAndPremultiplied(hasAlpha(), mIsPremultiplied);
+            b.mIsPremultiplied = mIsPremultiplied;
             b.mDensity = mDensity;
         }
         return b;
@@ -728,12 +727,12 @@ public final class Bitmap implements Parcelable {
                 paint.setAntiAlias(true);
             }
         }
-
+        
         // The new bitmap was created from a known bitmap source so assume that
         // they use the same density
         bitmap.mDensity = source.mDensity;
-        bitmap.setAlphaAndPremultiplied(source.hasAlpha(), source.mIsPremultiplied);
-
+        bitmap.mIsPremultiplied = source.mIsPremultiplied;
+        
         canvas.setBitmap(bitmap);
         canvas.drawBitmap(source, srcR, dstR, paint);
         canvas.setBitmap(null);
@@ -811,9 +810,9 @@ public final class Bitmap implements Parcelable {
         if (display != null) {
             bm.mDensity = display.densityDpi;
         }
-        bm.setHasAlpha(hasAlpha);
         if (config == Config.ARGB_8888 && !hasAlpha) {
             nativeErase(bm.mNativeBitmap, 0xff000000);
+            nativeSetHasAlpha(bm.mNativeBitmap, hasAlpha);
         }
         // No need to initialize the bitmap to zeroes with other configs;
         // it is backed by a VM byte array which is by definition preinitialized
@@ -1042,23 +1041,11 @@ public final class Bitmap implements Parcelable {
      * <p>This method will not affect the behavior of a bitmap without an alpha
      * channel, or if {@link #hasAlpha()} returns false.</p>
      *
-     * <p>Calling createBitmap() or createScaledBitmap() with a source
-     * Bitmap whose colors are not pre-multiplied may result in a RuntimeException,
-     * since those functions require drawing the source, which is not supported for
-     * un-pre-multiplied Bitmaps.</p>
-     *
      * @see Bitmap#isPremultiplied()
      * @see BitmapFactory.Options#inPremultiplied
      */
     public final void setPremultiplied(boolean premultiplied) {
         mIsPremultiplied = premultiplied;
-        nativeSetAlphaAndPremultiplied(mNativeBitmap, hasAlpha(), premultiplied);
-    }
-
-    /** Helper function to set both alpha and premultiplied. **/
-    private final void setAlphaAndPremultiplied(boolean hasAlpha, boolean premultiplied) {
-        mIsPremultiplied = premultiplied;
-        nativeSetAlphaAndPremultiplied(mNativeBitmap, hasAlpha, premultiplied);
     }
 
     /** Returns the bitmap's width */
@@ -1219,7 +1206,7 @@ public final class Bitmap implements Parcelable {
      * non-opaque per-pixel alpha values.
      */
     public void setHasAlpha(boolean hasAlpha) {
-        nativeSetAlphaAndPremultiplied(mNativeBitmap, hasAlpha, mIsPremultiplied);
+        nativeSetHasAlpha(mNativeBitmap, hasAlpha);
     }
 
     /**
@@ -1624,8 +1611,7 @@ public final class Bitmap implements Parcelable {
 
     private static native void nativePrepareToDraw(int nativeBitmap);
     private static native boolean nativeHasAlpha(int nativeBitmap);
-    private static native void nativeSetAlphaAndPremultiplied(int nBitmap, boolean hasAlpha,
-                                                              boolean isPremul);
+    private static native void nativeSetHasAlpha(int nBitmap, boolean hasAlpha);
     private static native boolean nativeHasMipMap(int nativeBitmap);
     private static native void nativeSetHasMipMap(int nBitmap, boolean hasMipMap);
     private static native boolean nativeSameAs(int nb0, int nb1);

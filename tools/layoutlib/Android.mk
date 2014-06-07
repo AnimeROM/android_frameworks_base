@@ -33,8 +33,6 @@ built_core_classes := $(call java-lib-files,core)
 
 built_ext_dep := $(call java-lib-deps,ext)
 built_ext_classes := $(call java-lib-files,ext)
-built_ext_data := $(call intermediates-dir-for, \
-			JAVA_LIBRARIES,ext,,COMMON)/javalib.jar
 
 built_layoutlib_create_jar := $(call intermediates-dir-for, \
 			JAVA_LIBRARIES,layoutlib_create,HOST)/javalib.jar
@@ -62,8 +60,7 @@ $(LOCAL_BUILT_MODULE): $(built_core_dep) \
 	             $@ \
 	             $(built_core_classes) \
 	             $(built_framework_classes) \
-	             $(built_ext_classes) \
-	             $(built_ext_data)
+	             $(built_ext_classes)
 	$(hide) ls -l $(built_framework_classes)
 
 

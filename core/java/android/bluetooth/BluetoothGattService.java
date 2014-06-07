@@ -15,6 +15,8 @@
  */
 package android.bluetooth;
 
+import android.bluetooth.BluetoothDevice;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -78,11 +80,6 @@ public class BluetoothGattService {
      * List of included services for this service.
      */
     protected List<BluetoothGattService> mIncludedServices;
-
-    /**
-     * Whether the service uuid should be advertised.
-     */
-    private boolean mAdvertisePreferred;
 
     /**
      * Create a new BluetoothGattService.
@@ -265,21 +262,5 @@ public class BluetoothGattService {
                 return characteristic;
         }
         return null;
-    }
-
-    /**
-     * Returns whether the uuid of the service should be advertised.
-     * @hide
-     */
-    public boolean isAdvertisePreferred() {
-      return mAdvertisePreferred;
-    }
-
-    /**
-     * Set whether the service uuid should be advertised.
-     * @hide
-     */
-    public void setAdvertisePreferred(boolean advertisePreferred) {
-      this.mAdvertisePreferred = advertisePreferred;
     }
 }

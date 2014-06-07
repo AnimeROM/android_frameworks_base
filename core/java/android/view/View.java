@@ -6550,7 +6550,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @attr ref android.R.styleable#View_filterTouchesWhenObscured
      */
     public void setFilterTouchesWhenObscured(boolean enabled) {
-        setFlags(enabled ? FILTER_TOUCHES_WHEN_OBSCURED : 0,
+        setFlags(enabled ? 0 : FILTER_TOUCHES_WHEN_OBSCURED,
                 FILTER_TOUCHES_WHEN_OBSCURED);
     }
 

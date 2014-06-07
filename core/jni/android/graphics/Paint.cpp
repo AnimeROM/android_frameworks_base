@@ -148,8 +148,7 @@ public:
 
     static void setFilterBitmap(JNIEnv* env, jobject paint, jboolean filterBitmap) {
         NPE_CHECK_RETURN_VOID(env, paint);
-        GraphicsJNI::getNativePaint(env, paint)->setFilterLevel(
-                filterBitmap ? SkPaint::kLow_FilterLevel : SkPaint::kNone_FilterLevel);
+        GraphicsJNI::getNativePaint(env, paint)->setFilterBitmap(filterBitmap);
     }
 
     static void setDither(JNIEnv* env, jobject paint, jboolean dither) {
@@ -566,7 +565,7 @@ public:
                 return 0;
             }
         }
-        jfloat* advancesArray = new jfloat[count];
+        jfloat advancesArray[count];
         jfloat totalAdvance = 0;
 
         TextLayout::getTextRunAdvances(paint, text, start, count, contextCount, flags,
@@ -575,7 +574,6 @@ public:
         if (advances != NULL) {
             env->SetFloatArrayRegion(advances, advancesIndex, count, advancesArray);
         }
-        delete [] advancesArray;
         return totalAdvance;
     }
 

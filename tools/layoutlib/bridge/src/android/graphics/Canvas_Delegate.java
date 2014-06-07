@@ -990,8 +990,7 @@ public final class Canvas_Delegate {
                 int limit = index + count;
                 boolean isRtl = flags == Canvas.DIRECTION_RTL;
                 if (paintDelegate.getTextAlign() != Paint.Align.LEFT.nativeInt) {
-                    RectF bounds = paintDelegate.measureText(text, index, count, isRtl);
-                    float m = bounds.right - bounds.left;
+                    float m = paintDelegate.measureText(text, index, count, isRtl);
                     if (paintDelegate.getTextAlign() == Paint.Align.CENTER.nativeInt) {
                         x -= m / 2;
                     } else if (paintDelegate.getTextAlign() == Paint.Align.RIGHT.nativeInt) {

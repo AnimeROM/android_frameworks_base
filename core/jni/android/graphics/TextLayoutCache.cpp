@@ -20,7 +20,6 @@
 
 #include "TextLayoutCache.h"
 #include "TextLayout.h"
-#include "SkGlyphCache.h"
 #include "SkTypeface_android.h"
 #include "HarfBuzzNGFaceSkia.h"
 #include <unicode/unistr.h>
@@ -758,8 +757,8 @@ void TextLayoutShaper::computeRunValues(const SkPaint* paint, const UChar* conte
             outPos->add(ypos);
             totalAdvance += xAdvance;
 
-            SkAutoGlyphCache autoCache(mShapingPaint, NULL, NULL);
-            const SkGlyph& metrics = autoCache.getCache()->getGlyphIDMetrics(glyphId);
+            // TODO: consider using glyph cache
+            const SkGlyph& metrics = mShapingPaint.getGlyphMetrics(glyphId, NULL);
             outBounds->join(xpos + metrics.fLeft, ypos + metrics.fTop,
                     xpos + metrics.fLeft + metrics.fWidth, ypos + metrics.fTop + metrics.fHeight);
 

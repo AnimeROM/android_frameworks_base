@@ -98,13 +98,6 @@ public class UsbDeviceManager {
     // which need debouncing.
     private static final int UPDATE_DELAY = 1000;
 
-    // Time we received a request to enter USB accessory mode
-    private long mAccessoryModeRequestTime = 0;
-
-    // Timeout for entering USB request mode.
-    // Request is cancelled if host does not configure device within 10 seconds.
-    private static final int ACCESSORY_REQUEST_TIMEOUT = 10 * 1000;
-
     private static final String BOOT_MODE_PROPERTY = "ro.bootmode";
 
     private UsbHandler mHandler;
@@ -212,8 +205,6 @@ public class UsbDeviceManager {
     }
 
     private void startAccessoryMode() {
-        if (!mHasUsbAccessory) return;
-
         mAccessoryStrings = nativeGetAccessoryStrings();
         boolean enableAudio = (nativeGetAudioMode() == AUDIO_MODE_SOURCE);
         // don't start accessory mode if our mandatory strings have not been set
@@ -232,7 +223,6 @@ public class UsbDeviceManager {
         }
 
         if (functions != null) {
-            mAccessoryModeRequestTime = SystemClock.elapsedRealtime();
             setCurrentFunctions(functions, false);
         }
     }
@@ -474,8 +464,6 @@ public class UsbDeviceManager {
         }
 
         private void setEnabledFunctions(String functions, boolean makeDefault) {
-            if (DEBUG) Slog.d(TAG, "setEnabledFunctions " + functions
-                    + " makeDefault: " + makeDefault);
 
             // Do not update persystent.sys.usb.config if the device is booted up
             // with OEM specific mode.
@@ -537,16 +525,9 @@ public class UsbDeviceManager {
         }
 
         private void updateCurrentAccessory() {
-            // We are entering accessory mode if we have received a request from the host
-            // and the request has not timed out yet.
-            boolean enteringAccessoryMode =
-                    mAccessoryModeRequestTime > 0 &&
-                        SystemClock.elapsedRealtime() <
-                            mAccessoryModeRequestTime + ACCESSORY_REQUEST_TIMEOUT;
+            if (!mHasUsbAccessory) return;
 
-            if (mConfigured && enteringAccessoryMode) {
-                // successfully entered accessory mode
-
+            if (mConfigured) {
                 if (mAccessoryStrings != null) {
                     mCurrentAccessory = new UsbAccessory(mAccessoryStrings);
                     Slog.d(TAG, "entering USB accessory mode: " + mCurrentAccessory);
@@ -557,7 +538,7 @@ public class UsbDeviceManager {
                 } else {
                     Slog.e(TAG, "nativeGetAccessoryStrings failed");
                 }
-            } else if (!enteringAccessoryMode) {
+            } else if (!mConnected) {
                 // make sure accessory mode is off
                 // and restore default functions
                 Slog.d(TAG, "exited USB accessory mode");
@@ -587,8 +568,6 @@ public class UsbDeviceManager {
                 }
             }
 
-            if (DEBUG) Slog.d(TAG, "broadcasting " + intent + " connected: " + mConnected
-                                    + " configured: " + mConfigured);
             mContext.sendStickyBroadcastAsUser(intent, UserHandle.ALL);
         }
 
@@ -628,7 +607,9 @@ public class UsbDeviceManager {
                     if (containsFunction(mCurrentFunctions,
                             UsbManager.USB_FUNCTION_ACCESSORY)) {
                         updateCurrentAccessory();
-                    } else if (!mConnected) {
+                    }
+
+                    if (!mConnected) {
                         // restore defaults when USB is disconnected
                         setEnabledFunctions(mDefaultFunctions, false);
                     }

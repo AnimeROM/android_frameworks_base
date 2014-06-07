@@ -731,14 +731,10 @@ public class SpellChecker implements SpellCheckerSessionListener {
                 }
             }
 
-            if (scheduleOtherSpellCheck && wordStart <= end) {
+            if (scheduleOtherSpellCheck) {
                 // Update range span: start new spell check from last wordStart
                 setRangeSpan(editable, wordStart, end);
             } else {
-                if (DBG && scheduleOtherSpellCheck) {
-                    Log.w(TAG, "Trying to schedule spellcheck for invalid region, from "
-                            + wordStart + " to " + end);
-                }
                 removeRangeSpan(editable);
             }
 

@@ -30,7 +30,6 @@
 #include <media/stagefright/MetaData.h>
 #include <media/stagefright/OMXClient.h>
 #include <media/stagefright/OMXCodec.h>
-#include <SkImage.h>
 #include <SkMallocPixelRef.h>
 
 #include "omx_jpeg_decoder.h"
@@ -185,7 +184,8 @@ void OmxJpegImageDecoder::installPixelRef(MediaBuffer *buffer, sp<MediaSource> d
 
 void OmxJpegImageDecoder::configBitmapSize(SkBitmap* bm, SkBitmap::Config pref,
         int width, int height) {
-    bm->setConfig(getColorSpaceConfig(pref), width, height, 0, kOpaque_SkAlphaType);
+    bm->setConfig(getColorSpaceConfig(pref), width, height);
+    bm->setIsOpaque(true);
 }
 
 SkBitmap::Config OmxJpegImageDecoder::getColorSpaceConfig(

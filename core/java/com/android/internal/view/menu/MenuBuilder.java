@@ -247,16 +247,10 @@ public class MenuBuilder implements Menu {
         startDispatchingItemsChanged();
     }
     
-    private boolean dispatchSubMenuSelected(SubMenuBuilder subMenu,
-            MenuPresenter preferredPresenter) {
+    private boolean dispatchSubMenuSelected(SubMenuBuilder subMenu) {
         if (mPresenters.isEmpty()) return false;
 
         boolean result = false;
-
-        // Try the preferred presenter first.
-        if (preferredPresenter != null) {
-            result = preferredPresenter.onSubMenuSelected(subMenu);
-        }
 
         for (WeakReference<MenuPresenter> ref : mPresenters) {
             final MenuPresenter presenter = ref.get();
@@ -871,10 +865,6 @@ public class MenuBuilder implements Menu {
     }
 
     public boolean performItemAction(MenuItem item, int flags) {
-        return performItemAction(item, null, flags);
-    }
-
-    public boolean performItemAction(MenuItem item, MenuPresenter preferredPresenter, int flags) {
         MenuItemImpl itemImpl = (MenuItemImpl) item;
         
         if (itemImpl == null || !itemImpl.isEnabled()) {
@@ -899,7 +889,7 @@ public class MenuBuilder implements Menu {
             if (providerHasSubMenu) {
                 provider.onPrepareSubMenu(subMenu);
             }
-            invoked |= dispatchSubMenuSelected(subMenu, preferredPresenter);
+            invoked |= dispatchSubMenuSelected(subMenu);
             if (!invoked) close(true);
         } else {
             if ((flags & FLAG_PERFORM_NO_CLOSE) == 0) {

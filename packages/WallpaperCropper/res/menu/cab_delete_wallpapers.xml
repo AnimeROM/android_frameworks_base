@@ -18,10 +18,14 @@
 */
 
 -->
+
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-   <item
-      android:id="@+id/menu_delete"
-      android:title="@string/wallpaper_delete"
-      android:showAsAction="always"
-      android:icon="@android:drawable/ic_menu_delete" />
- </menu>
+
+  <item
+
+     android:id="@id/menu_delete"
+     android:title="@string/wallpaper_delete"
+     android:showAsAction="always"
+     android:icon="@android:drawable/ic_menu_delete" />
+
+</menu>

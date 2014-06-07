@@ -476,7 +476,7 @@ public:
                 if (paint) {
                     filteredPaint = *paint;
                 }
-                filteredPaint.setFilterLevel(SkPaint::kLow_FilterLevel);
+                filteredPaint.setFilterBitmap(true);
                 canvas->drawBitmap(*bitmap, left_, top_, &filteredPaint);
             } else {
                 canvas->drawBitmap(*bitmap, left_, top_, paint);
@@ -491,7 +491,7 @@ public:
             if (paint) {
                 filteredPaint = *paint;
             }
-            filteredPaint.setFilterLevel(SkPaint::kLow_FilterLevel);
+            filteredPaint.setFilterBitmap(true);
 
             canvas->drawBitmap(*bitmap, 0, 0, &filteredPaint);
 
@@ -514,7 +514,7 @@ public:
             if (paint) {
                 filteredPaint = *paint;
             }
-            filteredPaint.setFilterLevel(SkPaint::kLow_FilterLevel);
+            filteredPaint.setFilterBitmap(true);
             canvas->drawBitmapRect(*bitmap, srcPtr, dst, &filteredPaint);
         } else {
             canvas->drawBitmapRect(*bitmap, srcPtr, dst, paint);

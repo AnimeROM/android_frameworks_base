@@ -372,25 +372,23 @@ public abstract class PackageMonitor extends android.content.BroadcastReceiver {
         } else if (Intent.ACTION_EXTERNAL_APPLICATIONS_AVAILABLE.equals(action)) {
             String[] pkgList = intent.getStringArrayExtra(Intent.EXTRA_CHANGED_PACKAGE_LIST);
             mAppearingPackages = pkgList;
-            mChangeType = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
-                    ? PACKAGE_UPDATING : PACKAGE_TEMPORARY_CHANGE;
+            mChangeType = PACKAGE_TEMPORARY_CHANGE;
             mSomePackagesChanged = true;
             if (pkgList != null) {
                 onPackagesAvailable(pkgList);
                 for (int i=0; i<pkgList.length; i++) {
-                    onPackageAppeared(pkgList[i], mChangeType);
+                    onPackageAppeared(pkgList[i], PACKAGE_TEMPORARY_CHANGE);
                 }
             }
         } else if (Intent.ACTION_EXTERNAL_APPLICATIONS_UNAVAILABLE.equals(action)) {
             String[] pkgList = intent.getStringArrayExtra(Intent.EXTRA_CHANGED_PACKAGE_LIST);
             mDisappearingPackages = pkgList;
-            mChangeType = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
-                    ? PACKAGE_UPDATING : PACKAGE_TEMPORARY_CHANGE;
+            mChangeType = PACKAGE_TEMPORARY_CHANGE;
             mSomePackagesChanged = true;
             if (pkgList != null) {
                 onPackagesUnavailable(pkgList);
                 for (int i=0; i<pkgList.length; i++) {
-                    onPackageDisappeared(pkgList[i], mChangeType);
+                    onPackageDisappeared(pkgList[i], PACKAGE_TEMPORARY_CHANGE);
                 }
             }
         }

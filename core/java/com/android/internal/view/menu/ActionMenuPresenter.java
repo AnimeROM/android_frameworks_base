@@ -164,24 +164,8 @@ public class ActionMenuPresenter extends BaseMenuPresenter
         }
         actionView.setVisibility(item.isActionViewExpanded() ? View.GONE : View.VISIBLE);
 
-        final ActionMenuView menuParent = (ActionMenuView) parent;
-        final ViewGroup.LayoutParams lp = actionView.getLayoutParams();
-        if (!menuParent.checkLayoutParams(lp)) {
-            actionView.setLayoutParams(menuParent.generateLayoutParams(lp));
-        }
-        return actionView;
-    }
-
-    @Override
-    public void bindItemView(final MenuItemImpl item, MenuView.ItemView itemView) {
-        itemView.initialize(item, 0);
-
-        final ActionMenuView menuView = (ActionMenuView) mMenuView;
-        final ActionMenuItemView actionItemView = (ActionMenuItemView) itemView;
-        actionItemView.setItemInvoker(menuView);
-
         if (item.hasSubMenu()) {
-            actionItemView.setOnTouchListener(new ForwardingListener(actionItemView) {
+            actionView.setOnTouchListener(new ForwardingListener(actionView) {
                 @Override
                 public ListPopupWindow getPopup() {
                     return mActionButtonPopup != null ? mActionButtonPopup.getPopup() : null;
@@ -198,8 +182,24 @@ public class ActionMenuPresenter extends BaseMenuPresenter
                 }
             });
         } else {
-            actionItemView.setOnTouchListener(null);
+            actionView.setOnTouchListener(null);
         }
+
+        final ActionMenuView menuParent = (ActionMenuView) parent;
+        final ViewGroup.LayoutParams lp = actionView.getLayoutParams();
+        if (!menuParent.checkLayoutParams(lp)) {
+            actionView.setLayoutParams(menuParent.generateLayoutParams(lp));
+        }
+        return actionView;
+    }
+
+    @Override
+    public void bindItemView(MenuItemImpl item, MenuView.ItemView itemView) {
+        itemView.initialize(item, 0);
+
+        final ActionMenuView menuView = (ActionMenuView) mMenuView;
+        ActionMenuItemView actionItemView = (ActionMenuItemView) itemView;
+        actionItemView.setItemInvoker(menuView);
     }
 
     @Override

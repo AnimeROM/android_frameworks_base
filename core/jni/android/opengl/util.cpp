@@ -632,7 +632,7 @@ static jint util_getInternalFormat(JNIEnv *env, jclass clazz,
     SkBitmap const * nativeBitmap =
             (SkBitmap const *)env->GetIntField(jbitmap, nativeBitmapID);
     const SkBitmap& bitmap(*nativeBitmap);
-    SkBitmap::Config config = bitmap.config();
+    SkBitmap::Config config = bitmap.getConfig();
     return getInternalFormat(config);
 }
 
@@ -642,7 +642,7 @@ static jint util_getType(JNIEnv *env, jclass clazz,
     SkBitmap const * nativeBitmap =
             (SkBitmap const *)env->GetIntField(jbitmap, nativeBitmapID);
     const SkBitmap& bitmap(*nativeBitmap);
-    SkBitmap::Config config = bitmap.config();
+    SkBitmap::Config config = bitmap.getConfig();
     return getType(config);
 }
 
@@ -653,7 +653,7 @@ static jint util_texImage2D(JNIEnv *env, jclass clazz,
     SkBitmap const * nativeBitmap =
             (SkBitmap const *)env->GetIntField(jbitmap, nativeBitmapID);
     const SkBitmap& bitmap(*nativeBitmap);
-    SkBitmap::Config config = bitmap.config();
+    SkBitmap::Config config = bitmap.getConfig();
     if (internalformat < 0) {
         internalformat = getInternalFormat(config);
     }
@@ -681,7 +681,7 @@ static jint util_texImage2D(JNIEnv *env, jclass clazz,
             SkColorTable* ctable = bitmap.getColorTable();
             memcpy(data, ctable->lockColors(), ctable->count() * sizeof(SkPMColor));
             memcpy(pixels, p, size);
-            ctable->unlockColors();
+            ctable->unlockColors(false);
             glCompressedTexImage2D(target, level, internalformat, w, h, border, imageSize, data);
             free(data);
         } else {
@@ -702,7 +702,7 @@ static jint util_texSubImage2D(JNIEnv *env, jclass clazz,
     SkBitmap const * nativeBitmap =
             (SkBitmap const *)env->GetIntField(jbitmap, nativeBitmapID);
     const SkBitmap& bitmap(*nativeBitmap);
-    SkBitmap::Config config = bitmap.config();
+    SkBitmap::Config config = bitmap.getConfig();
     if (format < 0) {
         format = getInternalFormat(config);
         if (format == GL_PALETTE8_RGBA8_OES)
