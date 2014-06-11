@@ -49,7 +49,7 @@ public:
     Bundle(void)
         : mCmd(kCommandUnknown), mVerbose(false), mAndroidList(false),
           mForce(false), mGrayscaleTolerance(0), mMakePackageDirs(false),
-          mUpdate(false), mExtending(false), mExtendedPackageId(0),
+          mUpdate(false), mExtending(false),
           mRequireLocalization(false), mPseudolocalize(false),
           mWantUTF16(false), mValues(false),
           mCompressionMethod(0), mJunkPath(false), mOutputAPKFile(NULL),
@@ -64,8 +64,6 @@ public:
           mMaxResVersion(NULL), mDebugMode(false), mNonConstantId(false), mProduct(NULL),
           mUseCrunchCache(false), mErrorOnFailedInsert(false), mOutputTextSymbols(NULL),
           mSingleCrunchInputFile(NULL), mSingleCrunchOutputFile(NULL),
-	  mOutputResourcesArscDir(NULL), mOutputResourcesApkFile(NULL),
-          mInternalZipPath(NULL), mInputAPKFile(NULL),
           mArgc(0), mArgv(NULL)
         {}
     ~Bundle(void) {}
@@ -94,8 +92,6 @@ public:
     void setUpdate(bool val) { mUpdate = val; }
     bool getExtending(void) const { return mExtending; }
     void setExtending(bool val) { mExtending = val; }
-    int getExtendedPackageId(void) const { return mExtendedPackageId; }
-    void setExtendedPackageId(int val) { mExtendedPackageId = val; }
     bool getRequireLocalization(void) const { return mRequireLocalization; }
     void setRequireLocalization(bool val) { mRequireLocalization = val; }
     bool getPseudolocalize(void) const { return mPseudolocalize; }
@@ -109,12 +105,6 @@ public:
     void setJunkPath(bool val) { mJunkPath = val; }
     const char* getOutputAPKFile() const { return mOutputAPKFile; }
     void setOutputAPKFile(const char* val) { mOutputAPKFile = val; }
-    const char* getOutputResDir() { return mOutputResourcesArscDir; }
-    const char* getOutputResApk() { return mOutputResourcesApkFile; }
-    const char* getInputAPKFile() { return mInputAPKFile; }
-    void setInputAPKFile(const char* val) { mInputAPKFile = val; }
-    void setOutputResDir(const char* val) { printf("Setting dir to %s\n", val); mOutputResourcesArscDir = val; }
-    void setOutputResApk(const char* val) { mOutputResourcesApkFile = val; }
     const char* getManifestPackageNameOverride() const { return mManifestPackageNameOverride; }
     void setManifestPackageNameOverride(const char * val) { mManifestPackageNameOverride = val; }
     const char* getInstrumentationPackageNameOverride() const { return mInstrumentationPackageNameOverride; }
@@ -192,8 +182,6 @@ public:
     void setSingleCrunchInputFile(const char* val) { mSingleCrunchInputFile = val; }
     const char* getSingleCrunchOutputFile() const { return mSingleCrunchOutputFile; }
     void setSingleCrunchOutputFile(const char* val) { mSingleCrunchOutputFile = val; }
-    void setInternalZipPath(const char* val) { mInternalZipPath = val; }
-    const char* getInternalZipPath() const { return mInternalZipPath; }
 
     /*
      * Set and get the file specification.
@@ -261,7 +249,6 @@ private:
     bool        mMakePackageDirs;
     bool        mUpdate;
     bool        mExtending;
-    int         mExtendedPackageId;
     bool        mRequireLocalization;
     bool        mPseudolocalize;
     bool        mWantUTF16;
@@ -304,10 +291,6 @@ private:
     const char* mOutputTextSymbols;
     const char* mSingleCrunchInputFile;
     const char* mSingleCrunchOutputFile;
-    const char* mOutputResourcesArscDir;
-    const char* mOutputResourcesApkFile;
-    const char* mInternalZipPath;
-    const char* mInputAPKFile;
 
     /* file specification */
     int         mArgc;

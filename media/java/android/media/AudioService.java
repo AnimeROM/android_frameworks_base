@@ -43,7 +43,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.content.pm.ThemeUtils;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
@@ -51,6 +50,8 @@ import android.database.ContentObserver;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.net.Uri;
+import android.net.http.CertificateChainValidator;
+import android.net.http.SslError;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -87,6 +88,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlPullParserException;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
@@ -95,6 +97,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
@@ -126,6 +129,8 @@ public class AudioService extends IAudioService.Stub {
     protected static final boolean DEBUG_RC = false;
     /** Debug volumes */
     protected static final boolean DEBUG_VOL = false;
+    /** Debug cert verification */
+    private static final boolean DEBUG_CERTS = false;
 
     /** How long to delay before persisting a change in volume/ringer mode. */
     private static final int PERSIST_DELAY = 500;
@@ -137,8 +142,6 @@ public class AudioService extends IAudioService.Stub {
 
     /** The UI */
     private VolumePanel mVolumePanel;
-    private Context mUiContext;
-    private Handler mHandler;
 
     // sendMsg() flags
     /** If the msg is already queued, replace it with this one. */
@@ -489,7 +492,6 @@ public class AudioService extends IAudioService.Stub {
         mContext = context;
         mContentResolver = context.getContentResolver();
         mAppOps = (AppOpsManager)context.getSystemService(Context.APP_OPS_SERVICE);
-	mHandler = new Handler();
         mVoiceCapable = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_voice_capable);
 
@@ -589,13 +591,6 @@ public class AudioService extends IAudioService.Stub {
         }
 
         context.registerReceiver(mReceiver, intentFilter);
-
-	ThemeUtils.registerThemeChangeReceiver(context, new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                mUiContext = null;
-            }
-        });
 
         mUseMasterVolume = context.getResources().getBoolean(
                 com.android.internal.R.bool.config_useMasterVolume);
@@ -1072,7 +1067,7 @@ public class AudioService extends IAudioService.Stub {
                 (flags & AudioManager.FLAG_BLUETOOTH_ABS_VOLUME) == 0) {
                 synchronized (mA2dpAvrcpLock) {
                     if (mA2dp != null && mAvrcpAbsVolSupported) {
-                        mA2dp.setAvrcpAbsoluteVolume(index);
+                        mA2dp.setAvrcpAbsoluteVolume(index / 10);
                     }
                 }
             }
@@ -1215,7 +1210,7 @@ public class AudioService extends IAudioService.Stub {
             streamType = AudioSystem.STREAM_NOTIFICATION;
         }
 
-        showVolumeChangeUi(streamType, flags);
+        mVolumePanel.postVolumeChanged(streamType, flags);
 
         if ((flags & AudioManager.FLAG_FIXED_VOLUME) == 0) {
             oldIndex = (oldIndex + 5) / 10;
@@ -4545,6 +4540,7 @@ public class AudioService extends IAudioService.Stub {
         }
     }
 
+<<<<<<< HEAD
     private void showVolumeChangeUi(final int streamType, final int flags) {
         if (mUiContext != null && mVolumePanel != null) {
             mVolumePanel.postVolumeChanged(streamType, flags);
@@ -4562,8 +4558,10 @@ public class AudioService extends IAudioService.Stub {
                 }
             });
         }
-  
+  }
 
+=======
+>>>>>>> parent of 651c6a8...  Theme Engine [3/8]
     //==========================================================================================
     // RemoteControlDisplay / RemoteControlClient / Remote info
     //==========================================================================================
@@ -4945,6 +4943,43 @@ public class AudioService extends IAudioService.Stub {
                 mPendingVolumeCommand = null;
             }
         }
+    }
+
+    public int verifyX509CertChain(int numcerts, byte [] chain, String domain, String authType) {
+
+        if (DEBUG_CERTS) {
+            Log.v(TAG, "java side verify for "
+                    + numcerts + " certificates (" + chain.length + " bytes"
+                            + ")for "+ domain + "/" + authType);
+        }
+
+        byte[][] certChain = new byte[numcerts][];
+
+        ByteBuffer buf = ByteBuffer.wrap(chain);
+        for (int i = 0; i < numcerts; i++) {
+            int certlen = buf.getInt();
+            if (DEBUG_CERTS) {
+                Log.i(TAG, "cert " + i +": " + certlen);
+            }
+            certChain[i] = new byte[certlen];
+            buf.get(certChain[i]);
+        }
+
+        try {
+            SslError err = CertificateChainValidator.verifyServerCertificates(certChain,
+                    domain, authType);
+            if (DEBUG_CERTS) {
+                Log.i(TAG, "verified: " + err);
+            }
+            if (err == null) {
+                return -1;
+            } else {
+                return err.getPrimaryError();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "failed to verify chain: " + e);
+        }
+        return SslError.SSL_INVALID;
     }
 
 

@@ -64,7 +64,10 @@ public:
         kOpenTruncate   = 0x08,     // if it exists, empty it
     };
     status_t open(const char* zipFileName, int flags);
+<<<<<<< HEAD
     status_t openfd(int fd, int flags);
+=======
+>>>>>>> parent of 651c6a8...  Theme Engine [3/8]
 
     /*
      * Add a file to the end of the archive.  Specify whether you want the

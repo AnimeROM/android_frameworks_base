@@ -22,13 +22,9 @@ import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.IPackageManager;
 import android.content.pm.PackageManager;
-import android.content.pm.ThemeUtils;
 import android.content.res.Configuration;
-import android.content.res.CustomTheme;
-import android.database.ContentObserver;
 import android.media.AudioService;
 import android.net.wifi.p2p.WifiP2pService;
 import android.os.Environment;
@@ -378,7 +374,6 @@ class ServerThread {
         AssetAtlasService atlas = null;
         PrintManagerService printManager = null;
         MediaRouterService mediaRouter = null;
-	ThemeService themeService = null;
 
         // Bring up services needed for UI.
         if (factoryTest != SystemServer.FACTORY_TEST_LOW_LEVEL) {
@@ -828,13 +823,6 @@ class ServerThread {
                 reportWtf("starting Print Service", e);
             }
 
-try {
-                Slog.i(TAG, "Theme Service");
-                themeService = new ThemeService(context);
-                ServiceManager.addService(Context.THEME_SERVICE, themeService);
-            } catch (Throwable e) {
-                reportWtf("starting Theme Service", e);
-            }
             if (!disableNonCoreServices) {
                 try {
                     Slog.i(TAG, "Media Router Service");
@@ -946,16 +934,6 @@ try {
             reportWtf("making Display Manager Service ready", e);
         }
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_APP_LAUNCH_FAILURE);
-        filter.addAction(Intent.ACTION_APP_LAUNCH_FAILURE_RESET);
-        filter.addAction(Intent.ACTION_PACKAGE_ADDED);
-        filter.addAction(Intent.ACTION_PACKAGE_REMOVED);
-        filter.addAction(ThemeUtils.ACTION_THEME_CHANGED);
-        filter.addCategory(Intent.CATEGORY_THEME_PACKAGE_INSTALLED_STATE_CHANGE);
-        filter.addDataScheme("package");
-        context.registerReceiver(new AppsLaunchFailureReceiver(), filter);
-
         // These are needed to propagate to the runnable below.
         final Context contextF = context;
         final MountService mountServiceF = mountService;
@@ -985,8 +963,6 @@ try {
         final PrintManagerService printManagerF = printManager;
         final MediaRouterService mediaRouterF = mediaRouter;
         final RotationSwitchObserver switchObserverF = switchObserver;
-	final IPackageManager pmf = pm;
-        final ThemeService themeServiceF = themeService;
 
         // We now tell the activity manager it is okay to run third party
         // code.  It will call back into us once it has gotten to the state
@@ -1145,17 +1121,6 @@ try {
                 } catch (Throwable e) {
                     reportWtf("Notifying MediaRouterService running", e);
                 }
-
-                try {
-                    // now that the system is up, apply default theme if applicable
-                    if (themeServiceF != null) themeServiceF.systemRunning();
-                    CustomTheme customTheme = CustomTheme.getBootTheme(contextF.getContentResolver());
-                    String iconPkg = customTheme.getIconPackPkgName();
-                    pmf.updateIconMapping(iconPkg);
-                } catch (Throwable e) {
-                    reportWtf("Icon Mapping failed", e);
-                }
-
             }
         });
 
