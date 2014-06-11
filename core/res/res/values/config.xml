@@ -486,6 +486,12 @@
     <!-- Class name for default keyguard appwidget [DO NOT TRANSLATE] -->
     <string name="widget_default_class_name"></string>
 
+    <!-- Package name for keyguard to use -->
+    <string name="config_keyguardPackage">com.android.keyguard</string>
+
+    <!-- Class name for keyguard service to use -->
+    <string name="config_keyguardService">com.android.keyguard.KeyguardService</string>
+
     <!-- Indicate whether the SD card is accessible without removing the battery. -->
     <bool name="config_batterySdCardAccessibility">false</bool>
 
@@ -1372,7 +1378,6 @@
          service state to display signal strength bars -->
     <bool name="config_combined_signal">true</bool>
     <bool name="config_hasRotationLockSwitch">false</bool>
-<<<<<<< HEAD
 
     <!-- Maximum wallpaper width for devices with very high-res screen (1920x1200)
          the wallpaper width suggestion by the launcher may be too large for
@@ -1387,6 +1392,4 @@
          2 - The device DOES NOT have a permanent menu key; ignore autodetection. -->
     <integer name="config_overrideHasPermanentMenuKey">0</integer>
 
-=======
->>>>>>> parent of 651c6a8...  Theme Engine [3/8]
 </resources>

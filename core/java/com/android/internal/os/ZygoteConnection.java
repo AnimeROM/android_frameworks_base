@@ -41,6 +41,8 @@ import libcore.io.ErrnoException;
 import libcore.io.IoUtils;
 import libcore.io.Libcore;
 
+import android.graphics.Typeface;
+
 /**
  * A connection that can make spawn requests.
  */
@@ -220,6 +222,17 @@ class ZygoteConnection {
                 ZygoteInit.setCloseOnExec(serverPipeFd, true);
             }
 
+            /**
+             *
+             * Needed, but present also in this commit:
+             * https://github.com/CyanogenMod/android_frameworks_base/commit/fc2fb1d5eb55b41477eabd75dbef3964be145732
+             *
+             */
+            //Replace the font cache if the theme changed
+            if (parsedArgs.refreshTheme) {
+                Typeface.recreateDefaults();
+            }
+
             pid = Zygote.forkAndSpecialize(parsedArgs.uid, parsedArgs.gid, parsedArgs.gids,
                     parsedArgs.debugFlags, rlimits, parsedArgs.mountExternal, parsedArgs.seInfo,
                     parsedArgs.niceName);
@@ -349,6 +362,9 @@ class ZygoteConnection {
 
         /** from --invoke-with */
         String invokeWith;
+
+        /** from --refresh_theme */
+        boolean refreshTheme;
 
         /**
          * Any args after and including the first non-option arg
@@ -509,6 +525,8 @@ class ZygoteConnection {
                     mountExternal = Zygote.MOUNT_EXTERNAL_MULTIUSER;
                 } else if (arg.equals("--mount-external-multiuser-all")) {
                     mountExternal = Zygote.MOUNT_EXTERNAL_MULTIUSER_ALL;
+                } else if (arg.equals("--refresh_theme")) {
+                    refreshTheme = true;
                 } else {
                     break;
                 }
